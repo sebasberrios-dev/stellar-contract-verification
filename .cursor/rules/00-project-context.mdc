@@ -1,0 +1,93 @@
+---
+description: Contexto base del proyecto de verificación de contratos Soroban
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Soroban Contract Verification Service — MVP
+
+## Qué construimos
+Servicio público y hosted que recibe un contrato Soroban desplegado, lee sus
+metadatos SEP-58, reconstruye el Wasm dentro de un contenedor Docker aislado,
+y expone el resultado de verificación vía API a exploradores, wallets y CLI.
+
+## Punto de partida real: stellar-experimental/contract-verifications
+El experimento existente es un workflow de GitHub Actions que:
+- Corre cada 10 minutos (cron `*/10 * * * *`)
+- Descarga Wasms desde `stellar-experimental/contract-wasms`
+- Lee metadatos con `stellar contract info meta --wasm <file> --output json`
+- Clona el repositorio fuente y hace checkout del commit exacto
+- Ejecuta `stellar contract build verify --wasm <file>` (PR stellar-cli#2525)
+- Persiste resultados como JSON en `verifications/<hash>.json` o `verifications-failed/<hash>.json`
+- El binary de stellar-cli se pinea al rev `3a2b5877136eb0552fe1ad3bba2c18135203aeca`
+
+### Lo que el experimento ya resuelve bien
+- Aislamiento por matrix job sin token permissions (`permissions: {}`)
+- Idempotencia: salta hashes ya procesados
+- Registro de errores diferenciado (missing meta / clone failure / verify failure)
+- El `stellar contract build verify` lee `bldimg`/`bldopt` del Wasm directamente
+
+### Lo que el experimento NO resuelve (gaps que el MVP debe cubrir)
+- No tiene API pública — los resultados viven en un repo de git
+- No hay endpoint de submit para desarrolladores
+- Solo funciona con `source_repo` + `source_rev` (no soporta tarball_url ni tarball_sha256)
+- No tiene allowlist de imágenes — acepta cualquier `bldimg`
+- No hay soporte multi-verificador ni señal de confianza de imagen
+- No distingue SEP-55 (atestaciones) de SEP-58 (reconstrucción)
+- Solo cubre mainnet implícitamente; no hay soporte explícito de testnet
+
+## Formato de record del experimento (fuente de verdad)
+```json
+// Éxito — verifications/<wasm-hash>.json
+{
+  "wasm-hash": "e7089d989d23d43e03b169b5be9649bc4f67c67685b8bc042da0adac21a4eb08",
+  "build-verified": true,
+  "error": null,
+  "run": "https://github.com/.../actions/runs/25221400778",
+  "meta": {
+    "rsver": "1.95.0",
+    "rssdkver": "25.1.0#86c50a1ea4f87b40add3064ff9df95c7553565c5",
+    "cliver": "26.0.0#60f7458e7ecffddf2f2d91dc6d0d2db4fab03ecc",
+    "bldimg": "docker.io/stellar/stellar-cli@sha256:cb2fc3116a6ace37a77ca6bb88afb4bee57fc746cd556a4373f2c3ee95d4e917",
+    "source_repo": "https://github.com/stellar/soroban-examples",
+    "source_rev": "7b168174ae1268dab91a0190d80a94ab7ff41b59",
+    "bldopt_profile": "release",
+    "bldopt_package": "soroban-increment-contract",
+    "bldopt_manifest_path": "increment/Cargo.toml"
+  }
+}
+
+// Fallo — verifications-failed/<wasm-hash>.json
+// El 99%+ de fallos actuales tienen este error:
+{
+  "wasm-hash": "0013c216...",
+  "build-verified": false,
+  "error": "wasm meta missing source_repo and source_rev",
+  "run": "...",
+  "meta": { "rsver": "1.92.0", "rssdkver": "20.5.0#..." }
+}
+```
+
+## Nota sobre bldopt en el record vs SEP-58
+En el record del experimento los bldopt aparecen como claves separadas
+(`bldopt_profile`, `bldopt_package`, `bldopt_manifest_path`).
+En SEP-58 el campo es `bldopt` repetible con valor `--flag=value`.
+Al leer metadatos del Wasm con `stellar contract info meta --output json`,
+la CLI los devuelve como `{"sc_meta_v0": {"key": "bldopt", "val": "--profile=release"}}`.
+El pipeline normaliza eso a un objeto flat con jq:
+`map({(.sc_meta_v0.key): .sc_meta_v0.val}) | add`
+Pero cuando hay múltiples `bldopt`, el `add` sobreescribe — hay que agruparlos como array.
+
+## Stack del MVP
+- **Backend**: TypeScript / Node.js (o Rust — decidir antes de empezar)
+- **Worker de reconstrucción**: adaptar la lógica del verify.yml a un proceso long-running
+- **Storage**: PostgreSQL para estado, S3-compatible para tarballs
+- **API**: REST JSON, versionada en `/v1/`
+- **CLI de submit**: wrappear `stellar contract build verify` o exponer endpoint POST
+
+## Invariantes que nunca romper
+1. El Wasm objetivo se descarga de la red Stellar — nunca lo sube el usuario
+2. La reconstrucción SIEMPRE ocurre en contenedor con `--network=none`
+3. Un resultado se comparte entre todos los consumidores (no se reconstruye por request)
+4. `bldimg` debe estar en la allowlist antes de ejecutar cualquier contenedor
+5. Records son write-once: para re-verificar hay que eliminarlo explícitamente

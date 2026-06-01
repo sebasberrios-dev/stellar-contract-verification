@@ -1,0 +1,154 @@
+---
+description: Pipeline de reconstrucción Docker — worker de verificación
+globs: ["src/worker/**", "src/rebuild/**", "src/queue/**", "docker-compose*", "Dockerfile*"]
+---
+
+# Agente Pipeline de Reconstrucción
+
+Responsable de toda la lógica que ejecuta reconstrucciones y produce records
+de verificación. Adapta el flujo del experimento a un servicio long-running.
+
+## El flujo del experimento (referencia directa)
+
+El `verify.yml` hace exactamente esto en cada matrix job:
+
+```bash
+# 1. Descargar el Wasm (en el experimento viene de contract-wasms repo)
+curl -fsSL "https://raw.githubusercontent.com/${WASMS_REPO}/main/${FILE}" \
+  -o /tmp/wasm/contract.wasm
+
+# 2. Leer metadatos
+raw=$(stellar contract info meta --wasm /tmp/wasm/contract.wasm --output json) || raw='[]'
+meta_json=$(jq -c 'map({(.sc_meta_v0.key): .sc_meta_v0.val}) | add // {}' <<<"$raw")
+
+# 3. Clonar fuente (solo soporta source_repo+source_rev hoy)
+git clone "$REPO" /tmp/source && git -C /tmp/source checkout "$REV"
+
+# 4. Ejecutar verificación (stellar-cli PR#2525 lee bldimg/bldopt del Wasm)
+cd /tmp/source
+stellar contract build verify --wasm /tmp/wasm/contract.wasm
+
+# 5. Emitir record JSON
+```
+
+El comando `stellar contract build verify` **ya hace el docker run internamente**.
+Lee `bldimg` y `bldopt` del Wasm y ejecuta el contenedor. El MVP puede
+delegar la reconstrucción en este comando o reimplementar la lógica.
+
+## Truco crítico del experimento: pre-crear ~/.cargo/registry
+
+```bash
+# Verify's docker backend bind-mounts host's ~/.cargo/registry into the container.
+# Si no existe, Docker lo crea como root y el uid-1001 del contenedor no puede escribir.
+mkdir -p "$HOME/.cargo/registry"
+```
+**Siempre pre-crear este directorio antes de correr el worker.**
+
+## Truco crítico: RUSTUP_TOOLCHAIN
+
+```bash
+# Resolver el toolchain de la imagen para evitar que rust-toolchain.toml
+# en el código fuente sobrescriba el toolchain de la imagen a mitad del build.
+RUSTUP_TOOLCHAIN=$(docker run --rm --entrypoint rustup "$BLDIMG" default | cut -d' ' -f1)
+# Pasarlo como env var al docker run de reconstrucción
+docker run --rm -v "$SOURCE:/source:ro" -e RUSTUP_TOOLCHAIN "$BLDIMG" contract build ...
+```
+
+## Implementación del worker en el MVP
+
+```typescript
+interface RebuildJob {
+  wasm_hash: string       // sha256 del Wasm desplegado
+  network: 'mainnet' | 'testnet'
+  submitted_at: Date
+  meta: WasmMeta          // parseado del Wasm por sep58-metadata agent
+}
+
+interface VerificationRecord {
+  'wasm-hash': string
+  'build-verified': boolean
+  error: string | null
+  run: string             // URL de la ejecución (job ID del worker en el MVP)
+  meta: Record<string, string | string[]>
+  // Campos nuevos que el experimento NO tiene pero el MVP necesita:
+  network: 'mainnet' | 'testnet'
+  verified_at: string     // ISO timestamp
+  image_trust: 'SDF_TRUSTED' | 'PUBLIC_AUDITABLE' | 'ARBITRARY'
+  source_mode: 'git' | 'tarball_verified' | 'tarball_url_only' | 'content_addressed' | 'missing'
+  verifier_id: string     // ID de esta instancia del servicio
+}
+```
+
+## Flujo completo del worker del MVP
+
+```
+1. Recibir job (wasm_hash + network)
+2. Descargar Wasm desde RPC de Stellar (no desde contract-wasms repo)
+3. Verificar sha256 del Wasm descargado == wasm_hash del job
+4. Ejecutar `stellar contract info meta --wasm <file> --output json`
+5. Parsear meta con lógica correcta de bldopt (ver agente sep58-metadata)
+6. Detectar source_mode
+7. Validar bldimg contra allowlist → rechazar si no está permitido
+8. Obtener código fuente según source_mode:
+   - git: clonar repo + checkout rev
+   - tarball_verified: descargar + verificar sha256 + extraer
+   - tarball_url_only: descargar + extraer
+   - content_addressed: buscar en content store interno
+   - missing: emitir record fallido inmediatamente
+9. Pre-crear ~/.cargo/registry
+10. Resolver RUSTUP_TOOLCHAIN de la imagen
+11. Ejecutar: `stellar contract build verify --wasm <wasm>` (o docker run directo)
+    con --network=none, timeout 5min, workspace limpio
+12. Comparar sha256 del Wasm reconstruido vs Wasm descargado
+13. Emitir VerificationRecord y persistir en DB
+14. Limpiar workspace temporal
+```
+
+## Reglas de aislamiento (NO negociables)
+
+```bash
+# Correcto — red deshabilitada, source montado read-only, workspace limpio por job
+docker run \
+  --rm \
+  --network=none \
+  -v "/tmp/job-${JOB_ID}/source:/source:ro" \
+  -v "$HOME/.cargo/registry:/root/.cargo/registry" \
+  -e RUSTUP_TOOLCHAIN \
+  --cpus=2 \
+  --memory=4g \
+  "${BLDIMG}" \
+  contract build ${BLDOPT[@]}
+
+# Incorrecto — nunca hacer esto
+docker run --network=host ...           # red del host expuesta
+docker run -v "/tmp/source:/source" ... # sin :ro
+docker run --privileged ...             # privilegios de host
+```
+
+## Idempotencia (del experimento, mantener en el MVP)
+
+```typescript
+// Antes de encolar cualquier job, verificar si ya existe record
+async function shouldProcess(wasmHash: string): Promise<boolean> {
+  const exists = await db.verifications.findOne({ wasm_hash: wasmHash })
+  return exists === null  // solo procesar si no hay record previo
+}
+// Para re-verificar: DELETE /v1/admin/verifications/:hash (ruta interna)
+```
+
+## Manejo de errores diferenciado (igual que el experimento)
+
+| condición | error en record |
+|-----------|----------------|
+| meta sin source_repo ni source_rev | `"wasm meta missing source_repo and source_rev"` |
+| meta sin source_repo | `"wasm meta missing source_repo"` |
+| meta sin source_rev | `"wasm meta missing source_rev"` |
+| clone falló | output del git clone (sin ANSI) |
+| verify falló | output del stellar contract build verify (sin ANSI) |
+| bldimg no en allowlist | `"bldimg not in allowlist: <digest>"` |
+| timeout | `"rebuild timed out after 300s"` |
+
+Siempre strip de secuencias ANSI antes de guardar en el record:
+```typescript
+const stripAnsi = (s: string) => s.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+```

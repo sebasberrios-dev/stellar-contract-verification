@@ -1,0 +1,166 @@
+---
+description: Persistencia — esquema de base de datos, storage de tarballs, records de verificación
+globs: ["src/db/**", "src/storage/**", "migrations/**", "prisma/**", "*.sql"]
+---
+
+# Agente Persistencia
+
+Responsable del esquema de base de datos y la capa de storage.
+Evoluciona el modelo de "archivos JSON en git" del experimento a una DB real.
+
+## El modelo del experimento (qué reemplazamos)
+
+El experimento persiste resultados como archivos JSON en dos directorios de un repo git:
+- `verifications/<wasm-hash>.json` → build-verified: true
+- `verifications-failed/<wasm-hash>.json` → build-verified: false
+
+Ventajas del modelo git: simple, auditable, versionado automático.
+Desventajas para el MVP: no queryable, no tiene API, no escala, no soporta
+múltiples verificadores ni re-verificaciones controladas.
+
+## Esquema PostgreSQL del MVP
+
+```sql
+-- Tabla principal de resultados
+CREATE TABLE verifications (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  wasm_hash       CHAR(64) NOT NULL,      -- sha256 sin prefijo
+  network         TEXT NOT NULL CHECK (network IN ('mainnet', 'testnet')),
+  build_verified  BOOLEAN NOT NULL,
+  error           TEXT,                   -- null si build_verified = true
+  source_mode     TEXT NOT NULL,          -- 'git' | 'tarball_verified' | 'tarball_url_only' | 'content_addressed' | 'missing'
+  image_trust     TEXT NOT NULL,          -- 'SDF_TRUSTED' | 'PUBLIC_AUDITABLE' | 'ARBITRARY'
+  verifier_id     TEXT NOT NULL,          -- FQDN de esta instancia
+  run_url         TEXT,                   -- URL del job interno (equivalente a "run" del experimento)
+  verified_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+  
+  -- Campos SEP-58 del meta del Wasm
+  meta            JSONB NOT NULL DEFAULT '{}',  -- todos los campos tal como los devuelve la CLI
+  bldimg          TEXT,
+  bldopt          TEXT[],                 -- array, corrigiendo el bug del experimento
+  source_repo     TEXT,
+  source_rev      CHAR(40),
+  tarball_url     TEXT,
+  tarball_sha256  CHAR(64),
+  
+  -- Índice único: un resultado por hash+network+verifier
+  UNIQUE (wasm_hash, network, verifier_id)
+);
+
+-- Índice para lookup por contract_id (requiere tabla separada de mapping)
+CREATE INDEX idx_verifications_wasm_hash ON verifications (wasm_hash);
+CREATE INDEX idx_verifications_verified_at ON verifications (verified_at DESC);
+
+-- Mapping contract_id → wasm_hash (un contrato puede tener múltiples deploys)
+CREATE TABLE contract_wasm_map (
+  contract_id     TEXT NOT NULL,
+  wasm_hash       CHAR(64) NOT NULL,
+  network         TEXT NOT NULL,
+  discovered_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (contract_id, network)
+);
+
+-- Cola de jobs pendientes
+CREATE TABLE verification_jobs (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  wasm_hash       CHAR(64) NOT NULL,
+  network         TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'queued',  -- 'queued' | 'running' | 'done' | 'failed'
+  attempts        INT NOT NULL DEFAULT 0,
+  queued_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  started_at      TIMESTAMPTZ,
+  completed_at    TIMESTAMPTZ,
+  source_override JSONB,  -- opcional, para contratos sin meta embebida
+  UNIQUE (wasm_hash, network)  -- no duplicar jobs para el mismo wasm
+);
+```
+
+## Equivalencias con el record del experimento
+
+```typescript
+// Record del experimento → registro en DB
+const experimentRecord = {
+  "wasm-hash": "e7089d...",
+  "build-verified": true,
+  "error": null,
+  "run": "https://github.com/.../runs/25221400778",
+  "meta": { "bldimg": "...", "source_repo": "...", ... }
+}
+
+// Equivalente en DB
+const dbRecord = {
+  wasm_hash: "e7089d...",
+  network: "mainnet",          // el experimento no distinguía — asumir mainnet
+  build_verified: true,
+  error: null,
+  run_url: "https://github.com/.../runs/25221400778",
+  meta: { "bldimg": "...", "source_repo": "...", ... },
+  // Campos extraídos del meta para queries eficientes:
+  bldimg: "docker.io/stellar/stellar-cli@sha256:cb2fc3...",
+  bldopt: ["--profile=release", "--manifest-path=increment/Cargo.toml"],
+  source_repo: "https://github.com/stellar/soroban-examples",
+  source_rev: "7b168174ae1268dab91a0190d80a94ab7ff41b59",
+}
+```
+
+## Queries frecuentes que el esquema debe soportar eficientemente
+
+```sql
+-- Lookup por wasm_hash (endpoint GET /v1/wasm/:hash)
+SELECT * FROM verifications WHERE wasm_hash = $1 AND network = $2;
+
+-- Lookup por contract_id (endpoint GET /v1/verify/:contract_id)
+SELECT v.* FROM verifications v
+JOIN contract_wasm_map m ON v.wasm_hash = m.wasm_hash AND v.network = m.network
+WHERE m.contract_id = $1 AND m.network = $2;
+
+-- Siguiente job a procesar
+SELECT * FROM verification_jobs
+WHERE status = 'queued'
+ORDER BY queued_at ASC
+LIMIT 1
+FOR UPDATE SKIP LOCKED;
+
+-- Estadísticas para GET /v1/status
+SELECT
+  COUNT(*) FILTER (WHERE build_verified = true)  AS verified_count,
+  COUNT(*) FILTER (WHERE build_verified = false) AS failed_count,
+  MAX(verified_at) AS last_verification_at
+FROM verifications;
+```
+
+## Storage de tarballs (S3-compatible)
+
+```
+Estructura de keys en S3:
+  tarballs/{sha256}          → el tarball, content-addressed
+  wasms/{network}/{sha256}   → cache del Wasm descargado de la red
+
+Política de retención:
+  - Tarballs: retener indefinidamente (inmutables por diseño content-addressed)
+  - Wasms cacheados: 30 días (pueden re-descargarse de la red)
+```
+
+## Idempotencia (mantener la propiedad del experimento)
+
+```typescript
+// Antes de insertar, verificar si ya existe
+const existing = await db.query(
+  'SELECT id FROM verifications WHERE wasm_hash = $1 AND network = $2 AND verifier_id = $3',
+  [wasmHash, network, verifierId]
+)
+if (existing.rows.length > 0) {
+  // No re-verificar. Para forzar re-verificación: DELETE el registro primero.
+  return { already_exists: true, record_id: existing.rows[0].id }
+}
+```
+
+## Migración desde el experimento
+
+Si se quiere importar los records JSON del experimento a la DB:
+```typescript
+// Los JSONs del experimento mapean directamente al esquema
+// Solo necesitan: network = 'mainnet' (asumido), verifier_id = 'github-actions-experiment'
+// Los bldopt deben re-parsearse del meta porque el experimento los guardó como
+// claves separadas (bldopt_profile, bldopt_package) en lugar de array
+```

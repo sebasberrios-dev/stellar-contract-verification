@@ -1,0 +1,157 @@
+---
+description: API pública REST — diseño, contratos de respuesta y reglas de versioning
+globs: ["src/api/**", "src/routes/**", "src/handlers/**", "openapi*", "*.yaml", "*.yml"]
+---
+
+# Agente API Pública
+
+Diseña e implementa los endpoints REST del servicio. La API es el contrato
+con exploradores, wallets, stellar-cli y otros consumidores.
+
+## Principios
+- Pública y gratuita — sin auth para lectura
+- Versionada en URL: `/v1/`
+- Respuestas siempre JSON con `Content-Type: application/json`
+- Idempotente en lecturas — el mismo hash siempre devuelve el mismo record
+- Debe prepararse para conformarse al próximo SEP de API de verificadores
+
+## Endpoints del MVP
+
+### GET /v1/verify/{contract_id}
+Busca por Contract ID (dirección `C...` de Stellar).
+
+```typescript
+// Response 200
+{
+  "contract_id": "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4",
+  "wasm_hash": "e7089d989d23d43e03b169b5be9649bc4f67c67685b8bc042da0adac21a4eb08",
+  "network": "mainnet",
+  "status": "verified",           // "verified" | "unverified" | "pending" | "failed" | "unverifiable"
+  "sep58": {
+    "bldimg": "docker.io/stellar/stellar-cli@sha256:cb2fc3...",
+    "bldopt": ["--profile=release", "--manifest-path=increment/Cargo.toml"],
+    "source_repo": "https://github.com/stellar/soroban-examples",
+    "source_rev": "7b168174ae1268dab91a0190d80a94ab7ff41b59",
+    "tarball_url": null,
+    "tarball_sha256": null
+  },
+  "source_mode": "git",           // "git" | "tarball_verified" | "tarball_url_only" | "content_addressed" | "missing"
+  "image_trust": "SDF_TRUSTED",   // "SDF_TRUSTED" | "PUBLIC_AUDITABLE" | "ARBITRARY"
+  "sep55_attestation": null,      // o { "attested": true, "github_run": "..." } si está disponible
+  "verified_at": "2026-05-15T12:00:00Z",
+  "verifier_id": "soroban-verify.example.com",
+  // Campos informativos del meta del Wasm
+  "meta": {
+    "rsver": "1.95.0",
+    "rssdkver": "25.1.0#86c50a1ea4f87b40add3064ff9df95c7553565c5",
+    "cliver": "26.0.0#60f7458e7ecffddf2f2d91dc6d0d2db4fab03ecc"
+  }
+}
+
+// Response 404 — contrato no encontrado en la red
+{ "error": "contract_not_found", "contract_id": "C..." }
+
+// Response 202 — en cola, todavía no procesado
+{ "status": "pending", "wasm_hash": "...", "queued_at": "..." }
+```
+
+### GET /v1/wasm/{wasm_hash}
+Busca por hash SHA-256 del Wasm (sin prefijo `sha256:`).
+Misma estructura de respuesta que `/v1/verify/{contract_id}`.
+Útil cuando el consumidor ya tiene el hash pero no el contract_id.
+
+### POST /v1/submit
+Permite a un desarrollador enviar su contrato para verificación.
+
+```typescript
+// Request body
+{
+  "contract_id": "C...",           // requerido — se usa para descargar el Wasm de la red
+  "network": "mainnet",            // "mainnet" | "testnet"
+  // Opcional: si el contrato no tiene meta embebida, se puede proveer aquí
+  "source_override": {
+    "source_repo": "https://github.com/user/my-contract",
+    "source_rev": "abc1234567890abcdef1234567890abcdef12345"
+  }
+}
+
+// Response 202
+{
+  "job_id": "uuid-v4",
+  "wasm_hash": "...",
+  "status": "queued",
+  "estimated_seconds": 300,
+  "poll_url": "/v1/wasm/<hash>"
+}
+
+// Response 409 — ya existe un record para este hash
+{
+  "error": "already_verified",
+  "existing": "/v1/wasm/<hash>"
+}
+
+// Response 429 — rate limit
+{
+  "error": "rate_limited",
+  "retry_after_seconds": 60
+}
+```
+
+### GET /v1/status
+Health check y métricas básicas públicas.
+```typescript
+{
+  "status": "ok",
+  "queue_depth": 12,
+  "verified_count": 1,        // solo 1 en el experimento, potencialmente miles en producción
+  "failed_count": 48291,      // miles de contratos sin meta SEP-58
+  "last_verification_at": "2026-05-15T12:00:00Z",
+  "stellar_cli_rev": "3a2b5877136eb0552fe1ad3bba2c18135203aeca"
+}
+```
+
+## Reglas de diseño de respuestas
+
+### status field — estados posibles
+| valor | significado |
+|-------|-------------|
+| `verified` | reconstrucción exitosa, bytes coinciden |
+| `unverified` | reconstrucción ejecutada, bytes NO coinciden |
+| `pending` | job en cola o ejecutándose |
+| `failed` | reconstrucción falló por error técnico (clone fail, timeout, etc.) |
+| `unverifiable` | no tiene meta SEP-58 (el caso más común hoy: `missing source_repo and source_rev`) |
+
+### source_mode — comunicar qué tipo de fuente se usó
+Siempre exponer `source_mode` para que exploradores puedan mostrar el ícono correcto.
+Un explorador NO debe mostrar "verificado" para `content_addressed` sin
+explicar que el código fuente no es recuperable públicamente.
+
+### Separación SEP-55 / SEP-58
+Nunca colapsar ambos en un solo campo `verified`. La respuesta tiene:
+- `status` + `sep58` → resultado de reconstrucción (este servicio)
+- `sep55_attestation` → resultado de atestación GitHub (puede ser null)
+
+### Multi-verificador
+Cuando haya múltiples verificadores en el futuro:
+```typescript
+// En lugar de un solo status, array de resultados por verificador
+"verifier_results": [
+  { "verifier_id": "soroban-verify.io", "status": "verified", "verified_at": "..." },
+  { "verifier_id": "orbitlens.com",     "status": "verified", "verified_at": "..." }
+]
+```
+El MVP puede empezar con `verifier_id` en la respuesta plana y migrar al array
+cuando haya más de un verificador activo.
+
+## Rate limiting (endpoints de escritura)
+
+```
+POST /v1/submit    → 10 requests/hora por IP
+GET  /v1/*         → sin rate limit
+```
+
+## Compatibilidad con stellar-cli
+
+El flujo de submit debe ser consumible por `stellar contract verify` (CLI PR#2586).
+La CLI leerá los metadatos del Wasm localmente y enviará a este servicio via POST.
+No romper la forma del body de POST /v1/submit sin versionar.

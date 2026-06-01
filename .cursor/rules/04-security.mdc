@@ -1,0 +1,133 @@
+---
+description: Seguridad — modelo de amenazas, allowlist de imágenes, hardening
+globs: ["src/**", "infra/**", "Dockerfile*", "docker-compose*", "*.yaml", "*.yml"]
+---
+
+# Agente Seguridad
+
+Revisa cualquier código que toque el entorno de reconstrucción, storage de tarballs,
+allowlist de imágenes o endpoints de escritura.
+
+## El gap de seguridad más grande del experimento actual
+El `verify.yml` del experimento tiene `permissions: {}` en el job de verify
+(excelente) pero **no tiene allowlist de bldimg**. Ejecuta cualquier imagen
+que el Wasm declare. En el MVP esto debe cambiar:
+
+```typescript
+// SIEMPRE antes de docker run
+async function assertInAllowlist(bldimg: string): Promise<void> {
+  const allowed = await getAllowlist()  // cargado desde config, no hardcodeado
+  const isAllowed = allowed.some(entry =>
+    entry.type === 'digest' ? bldimg.includes(entry.digest) :
+    entry.type === 'source'  ? bldimg.startsWith(entry.prefix) : false
+  )
+  if (!isAllowed) {
+    throw new Error(`bldimg not in allowlist: ${bldimg}`)
+  }
+}
+```
+
+## Image Trust Signal — cómo calcularlo
+
+```typescript
+type ImageTrust = 'SDF_TRUSTED' | 'PUBLIC_AUDITABLE' | 'ARBITRARY'
+
+function computeImageTrust(bldimg: string, allowlist: AllowlistEntry[]): ImageTrust {
+  const sdfEntry = allowlist.find(e => e.source === 'stellar-cli-docker' && bldimg.includes(e.digest))
+  if (sdfEntry) return 'SDF_TRUSTED'
+
+  // Tiene atestaciones SLSA pero no es de SDF
+  const publicEntry = allowlist.find(e => e.has_slsa_attestation && bldimg.includes(e.digest))
+  if (publicEntry) return 'PUBLIC_AUDITABLE'
+
+  return 'ARBITRARY'  // digest válido pero fuente no reconocida
+}
+```
+
+La señal de confianza es informativa — incluso `ARBITRARY` puede procesarse
+si está en la allowlist. La semántica es para que los consumidores la muestren.
+
+## Allowlist: estructura de config
+
+```yaml
+# allowlist.yaml — versionado en el repo, actualizable sin redeploy
+sources:
+  - name: "stellar-cli-docker (SDF official)"
+    trust: "SDF_TRUSTED"
+    prefix: "docker.io/stellar/stellar-cli@sha256:"
+    has_slsa_attestation: true
+    entries:
+      - digest: "sha256:cb2fc3116a6ace37a77ca6bb88afb4bee57fc746cd556a4373f2c3ee95d4e917"
+        tag: "26.0.0"
+        added_at: "2026-05-01"
+        active: true
+```
+
+Nunca hardcodear digests como strings literales en el código. Siempre leer de config.
+
+## Checklist pre-docker-run (ejecutar en orden, abortar en primer fallo)
+
+```
+[ ] 1. bldimg pasa regex de formato SEP-58
+[ ] 2. bldimg está en allowlist → computar image_trust
+[ ] 3. source ha sido descargado en workspace temporal nuevo (no reutilizado)
+[ ] 4. si tarball: sha256 verificado antes de extraer
+[ ] 5. ~/.cargo/registry pre-creado por el worker user (no root)
+[ ] 6. RUSTUP_TOOLCHAIN resuelto de la imagen
+[ ] 7. Workspace montado como :ro
+[ ] 8. --network=none en el docker run
+[ ] 9. Timeout configurado (hard kill a 300s)
+[ ] 10. Workspace limpiado en finally (aunque haya error)
+```
+
+## Checklist de storage de tarballs
+
+```
+[ ] Nombre del archivo = sha256 del contenido (content-addressed, no nombre del usuario)
+[ ] Verificar sha256 ANTES de almacenar — nunca después
+[ ] Límite de tamaño: rechazar tarballs > 50MB
+[ ] No descomprimir tarballs recibidos fuera del contenedor
+[ ] No ejecutar ningún script del tarball fuera del contenedor
+[ ] Los tarballs no tienen acceso a secretos del host
+```
+
+## Checklist de endpoints de escritura
+
+```
+[ ] Rate limiting: POST /v1/submit ≤ 10 req/hora por IP
+[ ] Validar inputs contra regexes SEP-58 ANTES de encolar
+[ ] No loggear IPs ni datos de usuario más allá de lo mínimo
+[ ] El wasm_hash del body debe coincidir con el Wasm descargado de la red
+[ ] No confiar en source_override sin validación de formato
+```
+
+## Lo que este servicio NO protege (y debe documentarse)
+- **Honestidad del desarrollador**: un dev puede embeber `source_repo` falso.
+  El servicio verifica que ese repo + rev produce ese Wasm. No verifica que
+  el código sea correcto o no malicioso.
+- **Imagen hostil**: una imagen en la allowlist pero comprometida puede emitir
+  Wasm arbitrario. La allowlist no es suficiente — requiere que la fuente
+  de imágenes tenga SLSA y SBOM auditables.
+- **Colisión SHA-1 en source_rev**: riesgo bajo pero no nulo. Documentar.
+- **Disponibilidad del repo**: el host puede hacer force-push o eliminar el repo.
+  Los records de verificación ya hechos siguen siendo válidos aunque el
+  código fuente desaparezca.
+
+## No hacer nunca
+```typescript
+// ❌ Ejecutar bldimg sin verificar allowlist
+await exec(`docker run ${bldimg} ...`)
+
+// ❌ Usar el nombre de archivo del usuario para el tarball
+await storage.save(userFilename, tarball)
+
+// ❌ Reutilizar workspace entre jobs
+const workspace = '/tmp/source'  // riesgo de contaminación entre builds
+
+// ❌ Aceptar bldimg de un fat manifest multi-arch
+// Un fat manifest resuelve diferente según la arquitectura del host
+// → mismo bldimg, diferente imagen concreta → no reproducible
+
+// ❌ Correr el contenedor con red habilitada
+await exec(`docker run --network=bridge ${bldimg} ...`)
+```

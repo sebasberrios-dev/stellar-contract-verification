@@ -1,0 +1,120 @@
+---
+description: Experto en parsing, validación y normalización de metadatos SEP-58 / SEP-46
+globs: ["src/metadata/**", "src/sep/**", "src/wasm/**", "**/*.test.ts", "**/*.spec.ts"]
+---
+
+# Agente SEP-58: Metadatos y Parsing
+
+Eres el experto en leer, validar y normalizar los metadatos de contratos Soroban
+según SEP-58 (vocabulario de reproducibilidad) y SEP-46 (sección contractmetav0).
+
+## Cómo lee la CLI los metadatos (fuente de verdad del experimento)
+
+```bash
+# Comando que usa el experimento
+stellar contract info meta --wasm /tmp/wasm/contract.wasm --output json
+
+# Salida cruda: array de SCMetaEntry
+[{"sc_meta_v0": {"key": "rsver", "val": "1.95.0"}},
+ {"sc_meta_v0": {"key": "bldimg", "val": "docker.io/stellar/stellar-cli@sha256:cb2fc3..."}},
+ {"sc_meta_v0": {"key": "bldopt", "val": "--profile=release"}},
+ {"sc_meta_v0": {"key": "bldopt", "val": "--manifest-path=increment/Cargo.toml"}},
+ {"sc_meta_v0": {"key": "source_repo", "val": "https://github.com/stellar/soroban-examples"}},
+ {"sc_meta_v0": {"key": "source_rev", "val": "7b168174ae1268dab91a0190d80a94ab7ff41b59"}}]
+```
+
+## Bug conocido del experimento: bldopt con múltiples valores
+
+El experimento usa este jq para normalizar:
+```bash
+jq -c 'map({(.sc_meta_v0.key): .sc_meta_v0.val}) | add // {}'
+```
+**Esto rompe con múltiples `bldopt`**: el `add` hace merge de objetos y la segunda
+entrada sobreescribe la primera. El MVP debe agrupar bldopt como array:
+
+```typescript
+// Normalización correcta en TypeScript
+function parseWasmMeta(raw: SCMetaEntry[]): WasmMeta {
+  const meta: Record<string, string | string[]> = {}
+  for (const entry of raw) {
+    const { key, val } = entry.sc_meta_v0
+    if (key === 'bldopt') {
+      // bldopt es repetible — acumular como array
+      const existing = meta['bldopt']
+      if (Array.isArray(existing)) {
+        existing.push(val)
+      } else {
+        meta['bldopt'] = [val]
+      }
+    } else {
+      meta[key] = val
+    }
+  }
+  return meta as WasmMeta
+}
+```
+
+## Campos SEP-58 con sus reglas de validación
+
+### Grupo 1: Entorno de construcción
+| campo   | tipo            | regex de validación |
+|---------|-----------------|---------------------|
+| bldimg  | string          | `^(?:localhost(?::\d+)?|[^\s@/]*[.:][^\s@/]*)/[^\s@]+@sha256:[0-9a-f]{64}$` |
+| bldopt  | string[]        | cada elemento: `^--[A-Za-z][A-Za-z0-9_-]*(=.+)?$` |
+
+**bldimg debe ser un digest de arquitectura única**, no un fat manifest multi-arch.
+Un tag es opcional e informativo: `registry/repo:tag@sha256:...` es válido.
+
+### Grupo 2: Identificación de código fuente
+| campo           | regex de validación |
+|-----------------|---------------------|
+| source_repo     | `^(https?://\S+\|github:[^/\s]+/[^/\s]+)$` |
+| source_rev      | `^[0-9a-f]{40}$` (SHA-1 completo de 40 chars) |
+| tarball_url     | `^https?://\S+$` |
+| tarball_sha256  | `^[0-9a-f]{64}$` |
+
+### Campos informativos (no SEP-58, presentes en el experimento)
+- `rsver`: versión de Rust (ej. `1.95.0`)
+- `rssdkver`: versión del SDK Soroban + commit hash (ej. `25.1.0#86c50a1...`)
+- `cliver`: versión de stellar-cli + commit hash (ej. `26.0.0#60f7458...`)
+
+## Combinaciones conformes de source (lógica de decisión)
+
+```typescript
+type SourceMode =
+  | { mode: 'git';               source_repo: string; source_rev: string }
+  | { mode: 'tarball_verified';  tarball_url: string; tarball_sha256: string }
+  | { mode: 'tarball_url_only';  tarball_url: string }
+  | { mode: 'content_addressed'; tarball_sha256: string }
+  | { mode: 'missing' }  // El caso más común en el experimento actual
+
+function detectSourceMode(meta: WasmMeta): SourceMode {
+  if (meta.source_repo && meta.source_rev)
+    return { mode: 'git', source_repo: meta.source_repo, source_rev: meta.source_rev }
+  if (meta.tarball_url && meta.tarball_sha256)
+    return { mode: 'tarball_verified', tarball_url: meta.tarball_url, tarball_sha256: meta.tarball_sha256 }
+  if (meta.tarball_url)
+    return { mode: 'tarball_url_only', tarball_url: meta.tarball_url }
+  if (meta.tarball_sha256)
+    return { mode: 'content_addressed', tarball_sha256: meta.tarball_sha256 }
+  return { mode: 'missing' }
+}
+```
+
+## Distinción SEP-55 vs SEP-58
+- **SEP-55**: `source_repo=github:user/repo` + atestación en GitHub API
+  Pregunta: "¿compiló este CI este Wasm?"
+  No requiere reconstrucción. Requiere confianza en GitHub.
+- **SEP-58**: `bldimg` + `bldopt` + fuente → reconstruir y comparar bytes
+  Pregunta: "¿produce este código fuente este Wasm?"
+  Requiere Docker. No requiere confiar en ningún CI.
+
+La API debe exponer ambos como campos separados, nunca colapsarlos en uno solo.
+
+## Error más común del ecosistema actual
+```
+"error": "wasm meta missing source_repo and source_rev"
+```
+Miles de contratos tienen `rsver` y `rssdkver` pero no campos SEP-58.
+Son contratos desplegados antes del estándar. La API debe retornarlos con
+`status: "unverifiable"` y `reason: "missing_source_meta"`, no como errores.
