@@ -1,0 +1,635 @@
+---
+description: "Plan de implementación para el demo, stack, fases, estructura de archivos y dependencias"
+alwaysApply: true
+---
+
+## BACKEND
+
+### B1 — Servidor Axum base + estructura del proyecto
+
+**Objetivo:** Levantar el servidor Axum con un healthcheck, definir la estructura de módulos y configurar variables de entorno. Sin base de datos.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `backend/Cargo.toml` | Crear |
+| `backend/src/main.rs` | Crear |
+| `backend/src/errors.rs` | Crear |
+| `backend/.env` | Crear |
+| `docker-compose.yml` | Crear — solo el servicio backend |
+
+**Dependencias en Cargo.toml:**
+
+```toml
+[dependencies]
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+hex = "0.4"
+reqwest = { version = "0.11", features = ["json"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tower-http = { version = "0.5", features = ["cors"] }
+```
+
+**Qué se hace:**
+
+- `main.rs`: levantar Axum en puerto `8080`, registrar rutas, inicializar tracing
+- `GET /health` retorna `{"status": "ok"}`
+- CORS habilitado para `http://localhost:3000` via `tower-http`
+- `.env`:
+  ```
+  SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+  PORT=8080
+  ```
+- `errors.rs`: enum `AppError` con variantes básicas que implementan `IntoResponse`:
+  - `ContractNotFound` → HTTP 404 con mensaje JSON
+  - `NoMetadata` → HTTP 200 con `verification_level: 0`
+  - `BuildFailed(String)` → HTTP 200 con `verified: false` + mensaje
+  - `InternalError(String)` → HTTP 500
+
+**Dependencias:** Ninguna.
+
+**Criterio de validación:**
+
+- `cargo build` compila sin errores
+- `cargo run` arranca el servidor sin panics
+- `curl http://localhost:8080/health` retorna `{"status":"ok"}`
+- CORS: request desde origen `localhost:3000` no es bloqueada
+
+---
+
+### B2 — Módulo RPC: leer WASM desde Stellar
+
+**Objetivo:** Consultar el RPC de Stellar (servidor de SDF), obtener el WASM binario del contrato y calcular su hash SHA256. El backend NO es el servidor — solo hace requests HTTP a la infraestructura de SDF.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `backend/src/rpc/mod.rs` | Crear |
+| `backend/src/rpc/client.rs` | Crear |
+
+**Contexto de infraestructura:**
+
+```
+Tu backend (Axum)
+      │
+      │ HTTP JSON-RPC
+      ▼
+https://soroban-testnet.stellar.org   ← servidor de SDF, no tuyo
+      │
+      ▼
+retorna WASM bytes del contrato
+```
+
+**Qué se hace:**
+
+- Función `get_contract_wasm(rpc_url: &str, contract_id: &str) -> Result<Vec<u8>, AppError>`:
+  - El `contract_id` tiene formato Strkey comenzando con `C`
+  - Pipeline de consultas al RPC de SDF:
+    ```
+    1. getLedgerEntries(ContractInstance del contract_id)
+       → extrae wasm_hash del XDR de respuesta
+    2. getLedgerEntries(ContractCode con wasm_hash)
+       → extrae los bytes WASM en base64
+    3. base64::decode → Vec<u8>
+    ```
+  - Si el contrato no existe en testnet: retornar `AppError::ContractNotFound`
+- Función `compute_sha256(bytes: &[u8]) -> String`:
+  - Usar crate `sha2` + `hex`
+  - Retornar hash como string hex lowercase de 64 caracteres
+- Cliente `reqwest` configurado con timeout de 30 segundos
+
+**Nota:** Para el MVP es válido también usar `stellar contract info` via `std::process::Command` si el parsing XDR resulta complejo. La stellar-cli ya maneja todo el parsing internamente:
+
+```bash
+stellar contract info --contract-id {id} --network testnet
+```
+
+Evaluar durante implementación cuál path es más rápido.
+
+**Dependencias:** B1 completo.
+
+**Criterio de validación:**
+
+- `get_contract_wasm(rpc_url, contract_id_valido)` retorna `Vec<u8>` con longitud > 0
+- `compute_sha256(bytes)` retorna string de exactamente 64 caracteres
+- `get_contract_wasm(rpc_url, "CINVALIDO")` retorna `AppError::ContractNotFound` sin panic
+- Los bytes retornados son WASM válido: los primeros 4 bytes son `\0asm` (magic number)
+
+---
+
+### B3 — Módulo Metadata: parsear SEP-58 desde contractmetav0
+
+**Objetivo:** Extraer la sección `contractmetav0` del WASM binario (operación local, sin red) y parsear los campos SEP-58: `source_repo`, `source_rev`, `bldimg`.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `backend/src/metadata/mod.rs` | Crear |
+| `backend/src/metadata/parser.rs` | Crear |
+
+**Qué se hace:**
+
+- Struct de resultado:
+  ```rust
+  #[derive(Debug, serde::Serialize)]
+  pub struct Sep58Metadata {
+      pub source_repo: Option<String>,  // "https://github.com/acme/contrato"
+      pub source_rev:  Option<String>,  // "a13b82d"
+      pub bldimg:      Option<String>,  // "stellar/stellar-cli:v22"
+  }
+  ```
+- Función `extract_sep58(wasm_bytes: &[u8]) -> Result<Sep58Metadata, AppError>`:
+  - Un WASM binary es una secuencia de secciones. La sección custom tiene type byte `0x00`
+  - Iterar las secciones buscando la que tiene nombre `"contractmetav0"`
+  - El contenido es una lista de pares `(key: String, val: String)` en formato XDR
+  - Mapear claves conocidas a los campos del struct
+  - Si no existe la sección: retornar `AppError::NoMetadata`
+- Función `get_verification_level(meta: &Sep58Metadata) -> u8`:
+  - `0` → sin metadata (no debería llegar aquí, pero por completitud)
+  - `1` → metadata presente pero sin `source_repo` o `source_rev`
+  - `2` → `source_repo` + `source_rev` presentes → listo para compilar
+
+**Alternativa más rápida para MVP:** si el parsing WASM manual resulta complejo, usar la stellar-cli para extraer metadata:
+
+```bash
+stellar contract info meta --contract-id {id} --network testnet
+```
+
+Y parsear el output como texto. Elegir el path más rápido de implementar.
+
+**Dependencias:** B2 completo.
+
+**Criterio de validación:**
+
+- WASM con `contractmetav0` → `extract_sep58` retorna `source_repo` y `source_rev` correctos
+- WASM sin sección custom → `AppError::NoMetadata`
+- `get_verification_level` retorna `2` cuando `source_repo` y `source_rev` están presentes
+- Todo opera en memoria, sin llamadas a red
+
+---
+
+### B4 — Módulo Builder: git clone + docker run stellar/stellar-cli
+
+**Objetivo:** Clonar el repositorio fuente, hacer checkout del commit exacto, y compilar usando la imagen Docker oficial de SDF. Tu backend orquesta el proceso — la imagen la provee SDF.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `backend/src/builder/mod.rs` | Crear |
+| `backend/src/builder/git.rs` | Crear |
+| `backend/src/builder/docker.rs` | Crear |
+
+**Contexto de infraestructura:**
+
+```
+Tu backend (Axum)
+      │
+      │ docker run (ejecución local)
+      ▼
+stellar/stellar-cli:latest   ← imagen oficial de SDF, descargada de Docker Hub
+      │
+      │ compila el contrato Rust → WASM
+      ▼
+archivo .wasm en /tmp/soroban-verify/{uuid}/target/...
+```
+
+**Qué se hace:**
+
+**`git.rs`** — función `clone_and_checkout(repo_url: &str, rev: &str, dest: &Path) -> Result<(), AppError>`:
+
+```bash
+# paso 1
+git clone {repo_url} {dest}
+
+# paso 2
+cd {dest} && git checkout {rev}
+```
+
+- Usar `std::process::Command` para ambos comandos
+- Timeout: 60 segundos por comando
+- Si falla: retornar `AppError::BuildFailed` con stderr como mensaje
+- Limpiar `dest` si el clone falla (`std::fs::remove_dir_all`)
+
+**`docker.rs`** — función `build_wasm(source_dir: &Path, bldimg: Option<&str>) -> Result<Vec<u8>, AppError>`:
+
+```bash
+docker run --rm \
+  -v {source_dir}:/workspace \
+  -w /workspace \
+  stellar/stellar-cli:latest \
+  stellar contract build
+```
+
+- `bldimg` es el valor de `Sep58Metadata.bldimg`
+- Imagen a usar: si `bldimg` contiene `stellar/stellar-cli`, usarla; caso contrario usar `stellar/stellar-cli:latest`
+- **CRÍTICO según RFP:** solo imágenes de la lista oficial SDF. Rechazar cualquier imagen no reconocida con `AppError::BuildFailed("Unauthorized build image")`
+- Timeout: 360 segundos (compilaciones Rust lentas)
+- Buscar `*.wasm` en `{source_dir}/target/wasm32-unknown-unknown/release/`
+- Leer y retornar los bytes del primer `.wasm` encontrado
+- Limpiar directorio temp después de build (éxito o fallo)
+
+**Función auxiliar** `temp_dir() -> PathBuf`: genera `/tmp/soroban-verify/{uuid}` con `uuid::Uuid::new_v4()`
+
+**Dependencias:** B3 completo. Docker debe estar instalado en la máquina del backend.
+
+**Criterio de validación:**
+
+- `clone_and_checkout("https://github.com/stellar/soroban-examples", "main", dest)` clona correctamente
+- `build_wasm(source_dir, None)` produce bytes WASM (magic `\0asm`) desde el contrato hello_world de soroban-examples
+- Imagen no reconocida retorna `AppError::BuildFailed` sin ejecutar Docker
+- El directorio `/tmp/soroban-verify/` queda vacío después de cada build
+
+---
+
+### B5 — Endpoint POST /verify: pipeline completo
+
+**Objetivo:** Integrar B2+B3+B4 en un pipeline secuencial, comparar hashes y retornar el resultado JSON. Sin persistencia — stateless.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `backend/src/routes/verify.rs` | Crear |
+| `backend/src/routes/mod.rs` | Crear |
+| `backend/src/main.rs` | Modificar — registrar ruta |
+
+**Structs:**
+
+```rust
+// Request
+#[derive(Deserialize)]
+pub struct VerifyRequest {
+    pub contract_id: String,
+}
+
+// Response
+#[derive(Serialize)]
+pub struct VerifyResponse {
+    pub verified:           bool,
+    pub verification_level: u8,
+    pub source_repo:        Option<String>,
+    pub source_rev:         Option<String>,
+    pub build_image:        Option<String>,
+    pub onchain_hash:       String,
+    pub rebuilt_hash:       Option<String>,
+    pub wasm_hash_match:    bool,
+    pub error:              Option<String>,
+}
+```
+
+**Pipeline del handler `POST /verify`:**
+
+```
+1. Validar contract_id
+   → no vacío
+   → comienza con "C"
+   → entre 50 y 60 caracteres
+   → si inválido: HTTP 400
+
+2. get_contract_wasm(contract_id)
+   → onchain_wasm: Vec<u8>
+   → onchain_hash: String (SHA256)
+   → si falla: VerifyResponse { verified: false, level: 0, error: "..." }
+
+3. extract_sep58(onchain_wasm)
+   → meta: Sep58Metadata
+   → level = get_verification_level(&meta)
+   → si NoMetadata: VerifyResponse { verified: false, level: 0, error: "No SEP-58 metadata" }
+
+4. Si level < 2:
+   → VerifyResponse { verified: false, level: 1, source_repo: meta.source_repo, ... }
+
+5. clone_and_checkout(meta.source_repo, meta.source_rev, temp_dir)
+   → si falla: VerifyResponse { verified: false, level: 2, error: "Clone failed: ..." }
+
+6. build_wasm(temp_dir, meta.bldimg)
+   → rebuilt_wasm: Vec<u8>
+   → rebuilt_hash = compute_sha256(rebuilt_wasm)
+   → si falla: VerifyResponse { verified: false, level: 2, error: "Build failed: ..." }
+
+7. wasm_hash_match = (onchain_hash == rebuilt_hash)
+   → verified = wasm_hash_match
+
+8. Retornar VerifyResponse completo con HTTP 200
+```
+
+**Estado compartido (`AppState`):**
+
+```rust
+#[derive(Clone)]
+pub struct AppState {
+    pub rpc_url: String,
+}
+```
+
+Solo la URL del RPC — sin pool de base de datos.
+
+**Dependencias:** B2, B3, B4 completos.
+
+**Criterio de validación:**
+
+- `curl -X POST http://localhost:8080/verify -H "Content-Type: application/json" -d '{"contract_id":"C..."}'` con contrato real de testnet retorna JSON válido
+- Contrato con SEP-58 completa → `verified: true`, `wasm_hash_match: true`, `level: 2`
+- Contrato sin metadata → `verified: false`, `level: 0`, `error: "No SEP-58 metadata"`
+- `contract_id: ""` → HTTP 400
+- `contract_id: "INVALIDO"` → HTTP 400
+- La respuesta siempre es JSON válido — nunca panic, nunca HTML de error
+
+---
+
+## FRONTEND
+
+### F1 — Setup Next.js + tipos + variables de entorno
+
+**Objetivo:** Confirmar que el proyecto Next.js está configurado, definir los tipos TypeScript del dominio y configurar la variable de entorno del backend.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `frontend/src/types/index.ts` | Crear |
+| `frontend/.env.local` | Crear |
+
+**Tipos en `index.ts`:**
+
+```typescript
+export interface VerifyRequest {
+  contract_id: string;
+}
+
+export interface VerifyResponse {
+  verified: boolean;
+  verification_level: 0 | 1 | 2 | 3 | 4;
+  source_repo: string | null;
+  source_rev: string | null;
+  build_image: string | null;
+  onchain_hash: string;
+  rebuilt_hash: string | null;
+  wasm_hash_match: boolean;
+  error: string | null;
+}
+
+export type VerificationStatus = "idle" | "loading" | "success" | "error";
+
+export const LEVEL_LABELS: Record<number, string> = {
+  0: "Unknown",
+  1: "Metadata Present",
+  2: "Source Verified",
+  3: "Source + Attestation",
+  4: "Source + Attestation + Auditor",
+};
+```
+
+**`.env.local`:**
+
+```
+BACKEND_URL=http://localhost:8080
+```
+
+— sin `NEXT_PUBLIC_` — solo accesible desde Server Actions, nunca desde el cliente.
+
+**Dependencias:** Ninguna.
+
+**Criterio de validación:**
+
+- `npx tsc --noEmit` retorna 0 errores
+- `LEVEL_LABELS[2]` es `"Source Verified"`
+- Ningún string `localhost:8080` hardcodeado fuera de `.env.local`
+
+---
+
+### F2 — Componente VerifyForm
+
+**Objetivo:** Input del Contract ID + botón de submit con estado de carga.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `frontend/src/components/VerifyForm.tsx` | Crear |
+
+**`VerifyForm.tsx`** — `"use client"` como primera línea:
+
+```typescript
+interface VerifyFormProps {
+  onSubmit: (contractId: string) => void;
+  isLoading: boolean;
+}
+```
+
+**Qué se hace:**
+
+- Estado interno: `contractId: string` via `useState`
+- Input controlado con placeholder `"C... (Soroban Contract ID)"`
+- Validación inline: si el ID no comienza con `C` o tiene menos de 10 chars → mensaje de error debajo del input
+- Botón "Verify Contract":
+  - Deshabilitado si `contractId.trim() === ""` o `isLoading`
+  - Durante `isLoading`: texto "Verifying..." + spinner CSS (no librerías externas)
+- `onSubmit(contractId.trim())` al hacer click o presionar Enter
+- El componente NO hace fetch — solo notifica al padre
+
+**Dependencias:** F1 completo.
+
+**Criterio de validación:**
+
+- `"use client"` es la primera línea del archivo
+- Submit con campo vacío no dispara `onSubmit`
+- Submit con `"HOLA"` muestra error inline, no dispara `onSubmit`
+- Submit con `"CABC123..."` (10+ chars empezando con C) dispara `onSubmit`
+- Con `isLoading={true}`: botón deshabilitado y muestra "Verifying..."
+
+---
+
+### F3 — Componente VerificationResult
+
+**Objetivo:** Mostrar el resultado en sus cuatro estados posibles: loading, verificado, fallido, sin metadata.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `frontend/src/components/VerificationResult.tsx` | Crear |
+
+**`VerificationResult.tsx`** — Server Component (sin `"use client"`):
+
+```typescript
+interface VerificationResultProps {
+  status: VerificationStatus;
+  result: VerifyResponse | null;
+  error: string | null;
+}
+```
+
+**Renderizado por estado:**
+
+`"idle"` → no renderiza nada (`return null`)
+
+`"loading"` → card gris con pulso:
+
+```
+⏳ Analyzing contract...
+   Reading WASM · Extracting metadata · Building · Comparing hashes
+```
+
+`"success"` con `verified === true` → card con borde verde:
+
+```
+✅ CONTRACT VERIFIED
+Contract:   {contract_id truncado}
+Repository: {source_repo con link}
+Commit:     {source_rev primeros 7 chars}
+Build Image:{build_image}
+Hash Match: TRUE
+Level:      2 — Source Verified
+```
+
+`"success"` con `verified === false` y `level === 0` → card con borde amarillo:
+
+```
+⚠️ NO METADATA FOUND
+This contract has no SEP-58 build metadata.
+The developer has not embedded source information.
+```
+
+`"success"` con `verified === false` y `level >= 2` → card con borde rojo:
+
+```
+❌ HASH MISMATCH
+On-chain:  {onchain_hash primeros 16 chars}...
+Rebuilt:   {rebuilt_hash primeros 16 chars}...
+Source does not match deployed contract.
+```
+
+`"error"` → card con borde rojo:
+
+```
+❌ ERROR
+{error message}
+```
+
+**Dependencias:** F1 completo. Backend NO requerido para construir este componente.
+
+**Criterio de validación:**
+
+- `VerificationResult.tsx` NO contiene `"use client"`
+- `npx tsc --noEmit` sin errores
+- Renderiza sin crash para cada combinación de `status` + `result`
+- Los hashes largos no rompen el layout (usar `truncate` de Tailwind o `overflow-hidden`)
+- Links a GitHub tienen `target="_blank" rel="noopener noreferrer"`
+
+---
+
+### F4 — Página principal + integración completa
+
+**Objetivo:** Conectar `VerifyForm` y `VerificationResult` con el backend mediante una Server Action. Pantalla única, flujo completo.
+
+**Archivos:**
+| Archivo | Acción |
+|---------|--------|
+| `frontend/src/app/actions/verify.ts` | Crear |
+| `frontend/src/app/page.tsx` | Crear/Modificar |
+
+**`verify.ts`** — `"use server"` como primera línea:
+
+```typescript
+export async function submitVerification(
+  contractId: string,
+): Promise<VerifyResponse>;
+```
+
+- URL: `${process.env.BACKEND_URL}/verify` — nunca hardcodeada
+- Método: `POST`, body: `{ contract_id: contractId }`, header: `application/json`
+- Si `!response.ok`: lanzar `Error` con el mensaje del body
+- Retornar body parseado como `VerifyResponse`
+- Sin `revalidatePath` — no hay cache que invalidar
+
+**`page.tsx`** — `"use client"` como primera línea:
+
+Estado:
+
+```typescript
+const [status, setStatus] = useState<VerificationStatus>("idle");
+const [result, setResult] = useState<VerifyResponse | null>(null);
+const [error, setError] = useState<string | null>(null);
+```
+
+Función `handleVerify(contractId: string)`:
+
+1. `setStatus("loading")`, limpiar `result` y `error`
+2. `await submitVerification(contractId)`
+3. Éxito: `setResult(data)`, `setStatus("success")`
+4. Error: `setError(e.message)`, `setStatus("error")`
+
+Layout de la página:
+
+```
+Header — "SOROBAN VERIFY"
+Tagline — "Cryptographic contract verification for Soroban"
+
+<VerifyForm onSubmit={handleVerify} isLoading={status === "loading"} />
+
+<VerificationResult status={status} result={result} error={error} />
+```
+
+**Dependencias:** F1, F2, F3 completos. **Backend B5 requerido.**
+
+**Criterio de validación:**
+
+- Flujo end-to-end completo:
+  1. Abrir `http://localhost:3000`
+  2. Ingresar contract_id de testnet con SEP-58 → click Verify
+  3. Aparece estado loading
+  4. Backend responde → card verde con todos los campos
+- Contrato sin metadata → card amarilla con mensaje apropiado
+- Contract ID inválido → error inline en el form, no llega al backend
+- Durante loading, botón deshabilitado (no permite doble submit)
+- Sin errores de React en consola del navegador
+
+---
+
+## Checklist de coordinación Backend–Frontend
+
+Antes de F4, confirmar con agente backend:
+
+| Contrato                         | `POST /verify` retorna                                                   |
+| -------------------------------- | ------------------------------------------------------------------------ |
+| Con SEP-58 completa + hash match | `verified: true`, `level: 2`, todos los campos                           |
+| Sin SEP-58 metadata              | `verified: false`, `level: 0`, `error: "No SEP-58 metadata"`             |
+| Hash mismatch                    | `verified: false`, `level: 2`, `onchain_hash` y `rebuilt_hash` distintos |
+| Contract ID inválido             | HTTP 400                                                                 |
+| Error de red/build               | `verified: false`, `error` con mensaje descriptivo                       |
+
+---
+
+## Contrato de demo para la presentación
+
+El contrato de prueba debe tener metadata SEP-58 embebida para demostrar el flujo completo.
+
+Opción A — embebir metadata al compilar con stellar-cli:
+
+```bash
+stellar contract build \
+  --meta "source=https://github.com/tu-org/contrato" \
+  --meta "rev=abc1234"
+```
+
+Opción B — verificar un contrato de soroban-examples que ya tenga metadata.
+
+**Estrategia para la demo:** tener listo el contract_id de un contrato verificado para mostrar el resultado en ~2 minutos. Avisar a los jueces que el proceso tarda por la compilación Docker.
+
+---
+
+## Lo que NO está en el MVP
+
+| Feature                     | Estado           |
+| --------------------------- | ---------------- |
+| PostgreSQL / base de datos  | ❌ Fuera del MVP |
+| Redis / queue               | ❌ Fuera del MVP |
+| SEP-55 / Sigstore           | ❌ Fuera del MVP |
+| Rate limiting               | ❌ Fuera del MVP |
+| Wallet integration          | ❌ Fuera del MVP |
+| Historial de verificaciones | ❌ Fuera del MVP |
+| Autenticación               | ❌ Fuera del MVP |
+| Producción / Kubernetes     | ❌ Fuera del MVP |
+
+El MVP demuestra el núcleo técnico del RFP: leer metadata SEP-58, compilar con la imagen oficial de SDF y comparar hashes. Eso es suficiente para los jueces.
