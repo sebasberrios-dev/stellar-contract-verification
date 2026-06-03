@@ -1,0 +1,66 @@
+---
+description: "B1 — Servidor Axum base, healthcheck, AppError, variables de entorno"
+globs: ["backend/Cargo.toml", "backend/src/main.rs", "backend/src/errors.rs", "backend/.env", "docker-compose.yml"]
+---
+
+# B1 — Servidor Axum base
+
+**Depende de:** nada — esta es la primera fase.
+**Desbloquea:** B2 (RPC), y en paralelo F1, F2, F3 (frontend no necesita backend).
+
+## Objetivo
+Levantar Axum en puerto `8080` con un healthcheck, definir `AppError`, y
+configurar variables de entorno. Sin base de datos, sin lógica de negocio.
+
+## Archivos que crea esta fase
+| Archivo | Acción |
+|---------|--------|
+| `backend/Cargo.toml` | Crear |
+| `backend/src/main.rs` | Crear |
+| `backend/src/errors.rs` | Crear |
+| `backend/.env` | Crear |
+| `docker-compose.yml` | Crear — solo el servicio backend |
+
+## Dependencias exactas en Cargo.toml
+```toml
+[dependencies]
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+hex = "0.4"
+reqwest = { version = "0.11", features = ["json"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+tower-http = { version = "0.5", features = ["cors"] }
+```
+
+## main.rs
+- Levantar Axum en puerto `8080`
+- Registrar ruta `GET /health`
+- Inicializar tracing con `tracing_subscriber`
+- CORS habilitado para `http://localhost:3000` via `tower-http`
+
+## errors.rs
+```rust
+pub enum AppError {
+    ContractNotFound,        // → HTTP 404, JSON
+    NoMetadata,              // → HTTP 200, verification_level: 0
+    BuildFailed(String),     // → HTTP 200, verified: false + mensaje
+    InternalError(String),   // → HTTP 500
+}
+```
+Implementar `IntoResponse` para cada variante. Todas las respuestas son JSON.
+
+## .env
+```
+SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+PORT=8080
+```
+
+## Criterio de validación — listo cuando
+- `cargo build` compila sin errores
+- `cargo run` arranca sin panics
+- `curl http://localhost:8080/health` retorna `{"status":"ok"}`
+- Request desde `localhost:3000` no es bloqueada por CORS

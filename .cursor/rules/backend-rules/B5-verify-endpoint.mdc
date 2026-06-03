@@ -1,0 +1,112 @@
+---
+description: "B5 — Endpoint POST /verify: pipeline completo B2+B3+B4, comparación de hashes, respuesta JSON"
+globs: ["backend/src/routes/**", "backend/src/main.rs"]
+---
+
+# B5 — Endpoint POST /verify
+
+**Depende de:** B2 + B3 + B4 completos.
+**Desbloquea:** F4 (integración frontend — único punto de sincronización crítico del proyecto).
+
+## Objetivo
+Integrar B2+B3+B4 en un pipeline secuencial, comparar SHA256 del Wasm
+on-chain vs reconstruido, y retornar el resultado JSON. Stateless — sin base de datos.
+
+## Archivos que crea/modifica esta fase
+| Archivo | Acción |
+|---------|--------|
+| `backend/src/routes/verify.rs` | Crear |
+| `backend/src/routes/mod.rs` | Crear |
+| `backend/src/main.rs` | Modificar — registrar `POST /verify` |
+
+## Structs
+```rust
+#[derive(Deserialize)]
+pub struct VerifyRequest {
+    pub contract_id: String,
+}
+
+#[derive(Serialize)]
+pub struct VerifyResponse {
+    pub verified:           bool,
+    pub verification_level: u8,
+    pub source_repo:        Option<String>,
+    pub source_rev:         Option<String>,
+    pub build_image:        Option<String>,
+    pub onchain_hash:       String,
+    pub rebuilt_hash:       Option<String>,
+    pub wasm_hash_match:    bool,
+    pub error:              Option<String>,
+}
+
+#[derive(Clone)]
+pub struct AppState {
+    pub rpc_url: String,  // sin base de datos
+}
+```
+
+## Pipeline del handler POST /verify
+```
+1. Validar contract_id
+   → no vacío
+   → empieza con "C"
+   → entre 50 y 60 caracteres
+   → si inválido: HTTP 400
+
+2. get_contract_wasm(contract_id)
+   → onchain_wasm: Vec<u8>
+   → onchain_hash = compute_sha256(onchain_wasm)
+   → si falla: VerifyResponse { verified: false, level: 0, error: "..." }
+
+3. extract_sep58(onchain_wasm)
+   → meta: Sep58Metadata
+   → level = get_verification_level(&meta)
+   → si NoMetadata: VerifyResponse { verified: false, level: 0, error: "No SEP-58 metadata" }
+
+4. Si level < 2:
+   → VerifyResponse { verified: false, level: 1, source_repo: meta.source_repo, ... }
+
+5. clone_and_checkout(meta.source_repo, meta.source_rev, temp_dir())
+   → si falla: VerifyResponse { verified: false, level: 2, error: "Clone failed: ..." }
+
+6. build_wasm(temp_dir, meta.bldimg)
+   → rebuilt_wasm: Vec<u8>
+   → rebuilt_hash = compute_sha256(rebuilt_wasm)
+   → si falla: VerifyResponse { verified: false, level: 2, error: "Build failed: ..." }
+
+7. wasm_hash_match = (onchain_hash == rebuilt_hash)
+   → verified = wasm_hash_match
+
+8. HTTP 200 con VerifyResponse completo
+```
+
+## Contrato de respuesta con el frontend
+El frontend espera exactamente estos campos y estos valores:
+
+| Escenario | verified | level | error |
+|-----------|----------|-------|-------|
+| Hash coincide | `true` | `2` | `null` |
+| Sin metadata SEP-58 | `false` | `0` | `"No SEP-58 metadata"` |
+| Hash no coincide | `false` | `2` | `null` |
+| Contract ID inválido | — | — | HTTP 400 |
+| Error de red/build | `false` | `2` | mensaje descriptivo |
+
+La respuesta es **siempre JSON válido** — nunca panic, nunca HTML de error.
+
+## Criterio de validación — listo cuando
+```bash
+# Caso success (contrato garantizado del experimento)
+curl -X POST http://localhost:8080/verify \
+  -H "Content-Type: application/json" \
+  -d '{"contract_id":"C..."}'
+# → verified: true, wasm_hash_match: true, verification_level: 2
+
+# Caso sin metadata
+# → verified: false, verification_level: 0, error: "No SEP-58 metadata"
+
+# Caso inválido
+curl -X POST http://localhost:8080/verify -d '{"contract_id":""}'
+# → HTTP 400
+```
+
+Con B5 listo, F4 puede conectarse. **Este es el único punto de sincronización del proyecto.**

@@ -1,0 +1,60 @@
+---
+description: "B3 — Módulo Metadata: parsear SEP-58 desde la sección contractmetav0 del Wasm"
+globs: ["backend/src/metadata/**"]
+---
+
+# B3 — Módulo Metadata
+
+**Depende de:** B2 completo (necesita `Vec<u8>` del Wasm y `AppError`).
+**Desbloquea:** B4 (Builder).
+
+## Objetivo
+Extraer la sección `contractmetav0` del Wasm binario y parsear los campos
+SEP-58. Operación completamente local — sin red, sin Docker, sin I/O.
+
+## Archivos que crea esta fase
+| Archivo | Acción |
+|---------|--------|
+| `backend/src/metadata/mod.rs` | Crear |
+| `backend/src/metadata/parser.rs` | Crear |
+
+## Struct de resultado
+```rust
+#[derive(Debug, serde::Serialize)]
+pub struct Sep58Metadata {
+    pub source_repo: Option<String>,  // "https://github.com/acme/contrato"
+    pub source_rev:  Option<String>,  // SHA-1 de 40 chars
+    pub bldimg:      Option<String>,  // "docker.io/stellar/stellar-cli@sha256:..."
+}
+```
+
+## Función principal
+```rust
+pub fn extract_sep58(wasm_bytes: &[u8]) -> Result<Sep58Metadata, AppError>
+```
+- El Wasm es una secuencia de secciones. La sección custom tiene type byte `0x00`
+- Iterar las secciones buscando la que tiene nombre `"contractmetav0"`
+- El contenido es una lista de pares `(key, val)` en formato XDR
+- Mapear claves conocidas al struct
+- Si no existe la sección → `AppError::NoMetadata`
+
+## Alternativa válida si el parsing Wasm manual es complejo
+```bash
+stellar contract info meta --contract-id {id} --network testnet
+```
+Parsear el output como texto via `std::process::Command`. Elegir el path
+más rápido — ambos son válidos para el MVP.
+
+## Función auxiliar
+```rust
+pub fn get_verification_level(meta: &Sep58Metadata) -> u8
+// 0 → sin metadata
+// 1 → metadata presente pero falta source_repo o source_rev
+// 2 → source_repo + source_rev presentes → listo para compilar
+```
+
+## Criterio de validación — listo cuando
+- Wasm con `contractmetav0` → `extract_sep58` retorna `source_repo` y `source_rev` correctos
+- Wasm sin sección custom → `AppError::NoMetadata`
+- `get_verification_level` retorna `2` cuando ambos campos están presentes
+- Ninguna llamada a red dentro de esta función

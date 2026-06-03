@@ -1,0 +1,87 @@
+---
+description: "B4 — Módulo Builder: git clone + docker run stellar/stellar-cli"
+globs: ["backend/src/builder/**"]
+---
+
+# B4 — Módulo Builder
+
+**Depende de:** B3 completo (`Sep58Metadata` debe existir con `source_repo`, `source_rev`, `bldimg`).
+**Desbloquea:** B5 (endpoint POST /verify).
+
+## Objetivo
+Clonar el repositorio fuente, hacer checkout del commit exacto, y compilar
+usando la imagen Docker oficial de SDF. El backend orquesta — la imagen la provee SDF.
+
+## Infraestructura
+```
+Tu backend (Axum)
+      │ docker run (ejecución local)
+      ▼
+stellar/stellar-cli:latest   ← imagen de SDF, descargada de Docker Hub
+      │ compila Rust → Wasm
+      ▼
+/tmp/soroban-verify/{uuid}/target/...
+```
+
+## Archivos que crea esta fase
+| Archivo | Acción |
+|---------|--------|
+| `backend/src/builder/mod.rs` | Crear |
+| `backend/src/builder/git.rs` | Crear |
+| `backend/src/builder/docker.rs` | Crear |
+
+## git.rs
+```rust
+pub fn clone_and_checkout(
+    repo_url: &str,
+    rev: &str,
+    dest: &Path,
+) -> Result<(), AppError>
+```
+- `git clone {repo_url} {dest}` via `std::process::Command`
+- `git -C {dest} checkout {rev}` via `std::process::Command`
+- Timeout: 60 segundos por comando
+- Si falla → `AppError::BuildFailed(stderr)`
+- Limpiar `dest` si el clone falla: `std::fs::remove_dir_all`
+
+## docker.rs
+```rust
+pub fn build_wasm(
+    source_dir: &Path,
+    bldimg: Option<&str>,
+) -> Result<Vec<u8>, AppError>
+```
+
+Comando que ejecuta:
+```bash
+docker run --rm \
+  -v {source_dir}:/workspace \
+  -w /workspace \
+  stellar/stellar-cli:latest \
+  stellar contract build
+```
+
+Lógica de imagen:
+- Si `bldimg` contiene `"stellar/stellar-cli"` → usar ese valor
+- Si no → usar `"stellar/stellar-cli:latest"`
+- **Imagen no reconocida → `AppError::BuildFailed("Unauthorized build image")` sin ejecutar Docker**
+
+Timeout: 360 segundos (compilaciones Rust son lentas).
+
+Resultado:
+- Buscar `*.wasm` en `{source_dir}/target/wasm32-unknown-unknown/release/`
+- Leer y retornar los bytes del primer `.wasm` encontrado
+- Limpiar `source_dir` en `finally` — tanto en éxito como en fallo
+
+## Función auxiliar
+```rust
+pub fn temp_dir() -> PathBuf
+// genera /tmp/soroban-verify/{uuid} con uuid::Uuid::new_v4()
+```
+Agregar `uuid = { version = "1", features = ["v4"] }` a `Cargo.toml`.
+
+## Criterio de validación — listo cuando
+- `clone_and_checkout("https://github.com/stellar/soroban-examples", "main", dest)` clona sin error
+- `build_wasm(source_dir, None)` retorna bytes que empiezan con `\0asm`
+- Imagen no reconocida retorna `AppError::BuildFailed` sin ejecutar ningún `docker run`
+- `/tmp/soroban-verify/` queda vacío después de cada build (éxito o fallo)

@@ -1,0 +1,71 @@
+---
+description: "B2 — Módulo RPC: leer WASM desde Stellar testnet y calcular SHA256"
+globs: ["backend/src/rpc/**"]
+---
+
+# B2 — Módulo RPC
+
+**Depende de:** B1 completo (`AppError` debe existir).
+**Desbloquea:** B3 (Metadata).
+
+## Objetivo
+Consultar el RPC de SDF, obtener el Wasm binario del contrato y calcular
+su SHA256. El backend NO es el servidor RPC — solo hace requests HTTP a SDF.
+
+## Infraestructura
+```
+Tu backend (Axum)
+      │ HTTP JSON-RPC
+      ▼
+https://soroban-testnet.stellar.org   ← servidor de SDF, no tuyo
+      │
+      ▼
+retorna Wasm bytes del contrato
+```
+
+## Archivos que crea esta fase
+| Archivo | Acción |
+|---------|--------|
+| `backend/src/rpc/mod.rs` | Crear |
+| `backend/src/rpc/client.rs` | Crear |
+
+## Función principal
+```rust
+pub async fn get_contract_wasm(
+    rpc_url: &str,
+    contract_id: &str,
+) -> Result<Vec<u8>, AppError>
+```
+
+El `contract_id` tiene formato Strkey comenzando con `C`.
+
+Pipeline de consultas al RPC:
+```
+1. getLedgerEntries(ContractInstance del contract_id)
+   → extrae wasm_hash del XDR de respuesta
+2. getLedgerEntries(ContractCode con wasm_hash)
+   → extrae los bytes Wasm en base64
+3. base64::decode → Vec<u8>
+```
+
+Si el contrato no existe → `AppError::ContractNotFound`.
+Cliente `reqwest` con timeout de 30 segundos.
+
+## Alternativa válida si el parsing XDR es complejo
+Usar `stellar contract info` via `std::process::Command`:
+```bash
+stellar contract info --contract-id {id} --network testnet
+```
+La CLI maneja todo el parsing internamente. Elegir el path más rápido de implementar — ambos son válidos para el MVP.
+
+## Función auxiliar
+```rust
+pub fn compute_sha256(bytes: &[u8]) -> String
+// sha2 + hex → string hex lowercase de exactamente 64 caracteres
+```
+
+## Criterio de validación — listo cuando
+- `get_contract_wasm(rpc_url, contract_id_valido)` retorna `Vec<u8>` con longitud > 0
+- Los primeros 4 bytes del resultado son `\0asm` (magic number Wasm)
+- `compute_sha256(bytes)` retorna string de exactamente 64 caracteres
+- `get_contract_wasm(rpc_url, "CINVALIDO")` retorna `AppError::ContractNotFound` sin panic
