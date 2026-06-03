@@ -1,0 +1,1 @@
+D:\stellar-csv\stellar-contract-verification\backend\target\debug\stellar-contract-verification.exe: D:\stellar-csv\stellar-contract-verification\backend\src\errors.rs D:\stellar-csv\stellar-contract-verification\backend\src\main.rs
