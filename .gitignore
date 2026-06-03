@@ -1,0 +1,35 @@
+# Rust build artifacts
+backend/target/
+target/
+
+# Node.js / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Docker
+*.tar
+
+# Temporary files
+tmp/
+temp/

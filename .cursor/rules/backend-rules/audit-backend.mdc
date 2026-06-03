@@ -1,0 +1,152 @@
+---
+description: "Auditor del backend — verifica criterios de validación B1-B5 y scope creep. Usar solo cuando B5 esté completo."
+globs: ["backend/**"]
+---
+
+# Agente Auditor — Backend Demo
+
+Úsame solo cuando B5 esté completo con:
+```
+@audit-backend audita todas las fases y genera el reporte
+```
+
+Tu única tarea es revisar el código existente, verificar cada criterio, y
+generar `AUDIT.md` en la raíz del proyecto con los resultados.
+No sugieras features nuevas. No corrijas código. Solo reporta.
+
+---
+
+## Qué auditar
+
+### 1. Criterios de validación por fase
+
+Revisa cada archivo de cada fase y marca ✅ o ❌ con evidencia del código.
+
+**B1 — Axum base**
+Archivos: `backend/Cargo.toml`, `backend/src/main.rs`, `backend/src/errors.rs`, `backend/.env`
+- [ ] `Cargo.toml` tiene exactamente estas dependencias: `axum=0.7`, `tokio`, `serde`, `serde_json`, `sha2`, `hex`, `reqwest`, `tracing`, `tracing-subscriber`, `tower-http`
+- [ ] `main.rs` levanta Axum en puerto `8080`
+- [ ] `GET /health` existe y retorna `{"status":"ok"}`
+- [ ] CORS configurado para `http://localhost:3000`
+- [ ] `AppError` tiene las 4 variantes: `ContractNotFound`, `NoMetadata`, `BuildFailed(String)`, `InternalError(String)`
+- [ ] Cada variante de `AppError` implementa `IntoResponse` con el HTTP status correcto
+
+**B2 — Módulo RPC**
+Archivos: `backend/src/rpc/mod.rs`, `backend/src/rpc/client.rs`
+- [ ] `get_contract_wasm` existe con la firma correcta
+- [ ] Timeout de reqwest configurado (30 segundos)
+- [ ] `ContractNotFound` retornado cuando el contrato no existe
+- [ ] `compute_sha256` retorna string de 64 caracteres
+- [ ] No hay URLs hardcodeadas — usa `rpc_url` del parámetro o del `AppState`
+
+**B3 — Módulo Metadata**
+Archivos: `backend/src/metadata/mod.rs`, `backend/src/metadata/parser.rs`
+- [ ] `Sep58Metadata` tiene los 3 campos: `source_repo`, `source_rev`, `bldimg` como `Option<String>`
+- [ ] `extract_sep58` retorna `AppError::NoMetadata` cuando no existe la sección
+- [ ] `get_verification_level` retorna `0`, `1` o `2` según los campos presentes
+- [ ] No hay llamadas a red dentro de `extract_sep58` ni `get_verification_level`
+
+**B4 — Módulo Builder**
+Archivos: `backend/src/builder/mod.rs`, `backend/src/builder/git.rs`, `backend/src/builder/docker.rs`
+- [ ] `clone_and_checkout` usa `std::process::Command` para git
+- [ ] Timeout de 60s en git clone
+- [ ] Limpia `dest` si el clone falla
+- [ ] `build_wasm` usa `std::process::Command` para docker run
+- [ ] Timeout de 360s en docker run
+- [ ] Limpia el workspace en finally (éxito y fallo)
+- [ ] `temp_dir()` genera path único con uuid
+
+**B5 — Endpoint POST /verify**
+Archivos: `backend/src/routes/verify.rs`, `backend/src/routes/mod.rs`
+- [ ] `VerifyRequest` tiene campo `contract_id: String`
+- [ ] `VerifyResponse` tiene todos los campos: `verified`, `verification_level`, `source_repo`, `source_rev`, `build_image`, `onchain_hash`, `rebuilt_hash`, `wasm_hash_match`, `error`
+- [ ] Validación de `contract_id`: no vacío, empieza con `C`, entre 50-60 chars → HTTP 400
+- [ ] Pipeline sigue el orden: validar → RPC → metadata → clone → build → comparar
+- [ ] `AppState` solo tiene `rpc_url` — sin base de datos
+- [ ] La respuesta es siempre HTTP 200 con JSON válido (excepto el 400 de validación)
+
+---
+
+### 2. Scope creep — código que NO debe existir
+
+Marca ❌ si encuentras cualquiera de estos en el código:
+
+- [ ] Base de datos (PostgreSQL, SQLite, cualquier ORM)
+- [ ] Redis o cualquier sistema de queue
+- [ ] Lógica de SEP-55 o atestaciones de GitHub
+- [ ] Soporte de `tarball_url` o `tarball_sha256` como fuente
+- [ ] Rate limiting
+- [ ] Autenticación o tokens
+- [ ] Historial de verificaciones
+- [ ] Endpoints adicionales a `GET /health` y `POST /verify`
+- [ ] Lógica de multi-verificador o `image_trust` signal
+- [ ] Configuración de producción (Kubernetes, Docker Swarm, nginx)
+
+---
+
+## Formato del AUDIT.md que debes generar
+
+```markdown
+# Backend Audit Report
+Generated: {fecha}
+Branch: {branch actual}
+
+## Resumen
+| Fase | Criterios | ✅ Pasan | ❌ Fallan |
+|------|-----------|---------|---------|
+| B1   | 6         | ?       | ?       |
+| B2   | 5         | ?       | ?       |
+| B3   | 4         | ?       | ?       |
+| B4   | 7         | ?       | ?       |
+| B5   | 7         | ?       | ?       |
+| **Scope creep** | 10 | ? | ? |
+
+## Estado general
+✅ LISTO PARA DEMO / ❌ REQUIERE CORRECCIONES
+
+---
+
+## B1 — Axum base
+### ✅ Pasan
+- ...
+
+### ❌ Fallan
+- criterio: motivo exacto (archivo, línea si es posible)
+
+---
+
+## B2 — Módulo RPC
+...
+
+## B3 — Módulo Metadata
+...
+
+## B4 — Módulo Builder
+...
+
+## B5 — Endpoint POST /verify
+...
+
+## Scope Creep
+### ✅ No encontrado
+### ❌ Encontrado
+- descripción: archivo donde aparece
+
+---
+
+## Veredicto final
+{LISTO PARA DEMO o REQUIERE CORRECCIONES}
+
+### Correcciones requeridas antes de la demo
+(solo si hay ❌)
+1. ...
+```
+
+---
+
+## Reglas del auditor
+
+- Reporta lo que encontraste en el código — no lo que debería ser
+- Si un criterio no se puede verificar leyendo el código (ej. requiere ejecutar cargo), márcalo como `⚠️ No verificable estáticamente`
+- No generes código de corrección — solo señala el problema y el archivo
+- El veredicto final es `LISTO PARA DEMO` solo si todos los criterios de validación pasan y no hay scope creep

@@ -1,5 +1,3 @@
-mod errors;
-
 use axum::{http::Method, response::Json, routing::get, Router};
 use serde_json::json;
 use std::net::SocketAddr;
