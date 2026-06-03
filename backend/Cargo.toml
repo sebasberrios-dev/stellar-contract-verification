@@ -18,3 +18,5 @@ dotenvy = "0.15"
 stellar-xdr = { version = "26", features = ["base64"] }
 # curr feature is default in v26; base64 feature enables to_xdr_base64/from_xdr_base64
 stellar-strkey = "0.0"
+uuid = { version = "1", features = ["v4"] }
+wait-timeout = "0.2"
