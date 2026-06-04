@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-cyan-primary: #00BFFF;
+  --color-blue-secondary: #3B82F6;
+  --color-surface-glass: rgba(255, 255, 255, 0.05);
+  --color-border-glass: rgba(255, 255, 255, 0.10);
+
+  /* Fonts — CSS var injected by next/font at runtime */
+  --font-geist: ui-sans-serif, system-ui, sans-serif;
+  --font-inter: ui-sans-serif, system-ui, sans-serif;
+  --font-jetbrains: ui-monospace, SFMono-Regular, monospace;
+
+  /* Shadows */
+  --shadow-glow-cyan: 0 0 20px rgba(0, 191, 255, 0.15);
+  --shadow-glow-cyan-strong: 0 0 20px rgba(0, 191, 255, 0.4);
+}
+
+:root {
+  --background: #000000;
+  --foreground: #ffffff;
+  --color-accent: #3b82f6;
+  --color-verified: #22c55e;
+  --color-pending: #f59e0b;
+  --color-failed: #ef4444;
+}
+
+.contract-id,
+code {
+  font-family: var(--font-mono, var(--font-jetbrains, ui-monospace, monospace));
+}
+
+html,
+body {
+  background: #000000;
+  color: #ffffff;
+}
+
+/* Scrollbar dark */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #111111;
+}
+::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00BFFF;
+}
+
+/* Utility classes */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 1rem;
+}
+
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 191, 255, 0.15);
+}
