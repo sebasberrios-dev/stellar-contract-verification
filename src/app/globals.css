@@ -65,3 +65,35 @@ body {
 .glow-cyan {
   box-shadow: 0 0 20px rgba(0, 191, 255, 0.15);
 }
+
+/* Nuevos colores base */
+:root {
+  --bg: #0a0b0f;
+  --surface: #111318;
+  --surface-2: #161920;
+  --border: #1e2130;
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #00BFFF 0%, #3B82F6 50%, #8B5CF6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scroll personalizado (complementa el existente) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1e2130 #0a0b0f;
+}
+
+/* Selección de texto */
+::selection {
+  background: rgba(0, 191, 255, 0.2);
+  color: #ffffff;
+}
+::-moz-selection {
+  background: rgba(0, 191, 255, 0.2);
+  color: #ffffff;
+}
