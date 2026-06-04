@@ -1,37 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-
-interface VerifyRequest {
-  contractId: string;
-}
-
-export interface VerificationResult {
-  contract: string;
-  repository: string;
-  commit: string;
-  buildImage: string;
-  hashMatch: boolean;
-  verified: boolean;
-  verifiedAt: string;
-}
+import type { VerifyResponse } from "../../../types/index";
 
 interface ErrorResponse {
   error: string;
   code: string;
 }
 
-function buildDemoResult(contractId: string): VerificationResult {
-  return {
-    contract: contractId,
-    repository: "https://github.com/stellar/soroban-examples",
-    commit: "a1b2c3d4e5f678901234567890abcdef12345678",
-    buildImage: "stellar/soroban-toolchain:v0.0.18",
-    hashMatch: true,
-    verified: true,
-    verifiedAt: new Date().toISOString(),
-  };
-}
-
-export async function POST(req: NextRequest): Promise<NextResponse<VerificationResult | ErrorResponse>> {
+export async function POST(
+  req: NextRequest
+): Promise<NextResponse<VerifyResponse | ErrorResponse>> {
   let body: unknown;
 
   try {
@@ -43,31 +20,30 @@ export async function POST(req: NextRequest): Promise<NextResponse<VerificationR
     );
   }
 
-  const { contractId } = body as Partial<VerifyRequest>;
+  const { contract_id } = body as { contract_id?: string };
 
-  if (!contractId || typeof contractId !== "string") {
+  if (!contract_id || typeof contract_id !== "string") {
     return NextResponse.json(
-      { error: "contractId is required", code: "MISSING_CONTRACT_ID" },
+      { error: "contract_id is required", code: "MISSING_CONTRACT_ID" },
       { status: 400 }
     );
   }
 
-  if (contractId.length < 10) {
+  const backendUrl = process.env.BACKEND_URL;
+  if (!backendUrl) {
     return NextResponse.json(
-      { error: "contractId is too short", code: "INVALID_CONTRACT_ID" },
-      { status: 422 }
+      { error: "Backend not configured", code: "BACKEND_NOT_CONFIGURED" },
+      { status: 500 }
     );
   }
 
-  if (!contractId.startsWith("C")) {
-    return NextResponse.json(
-      { error: "contractId must start with C", code: "INVALID_CONTRACT_ID" },
-      { status: 422 }
-    );
-  }
+  const upstream = await fetch(`${backendUrl}/verify`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contract_id }),
+  });
 
-  // Simulated verification delay — replace with real Soroban RPC call
-  await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+  const data = await upstream.json();
 
-  return NextResponse.json(buildDemoResult(contractId), { status: 200 });
+  return NextResponse.json(data, { status: upstream.status });
 }

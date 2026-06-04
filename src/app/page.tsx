@@ -11,39 +11,32 @@ import VerificationForm from "../components/VerificationForm";
 import BadgesRow from "../components/BadgesRow";
 import ResultPanel from "../components/ResultPanel";
 import AccordionSection from "../components/AccordionSection";
-
-interface VerificationResult {
-  contract: string;
-  repository: string;
-  commit: string;
-  buildImage: string;
-  hashMatch: boolean;
-  verified: boolean;
-}
-
-const DEMO_BASE: Omit<VerificationResult, "contract"> = {
-  repository: "https://github.com/stellar/soroban-examples",
-  commit: "a1b2c3d4e5f678901234567890abcdef12345678",
-  buildImage: "stellar/soroban-toolchain:v0.0.18",
-  hashMatch: true,
-  verified: true,
-};
+import { submitVerification } from "./actions/verify";
+import type { VerifyResponse } from "../types/index";
 
 export default function Home() {
-  const [verificationResult, setVerificationResult] = useState<VerificationResult | null>(null);
+  const [verificationResult, setVerificationResult] = useState<VerifyResponse | null>(null);
+  const [contractId, setContractId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  async function handleVerify(contractId: string) {
+  async function handleVerify(id: string) {
     setLoading(true);
     setShowResult(false);
     setVerificationResult(null);
+    setFetchError(null);
+    setContractId(id);
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 2200));
-
-    setVerificationResult({ contract: contractId, ...DEMO_BASE });
-    setShowResult(true);
-    setLoading(false);
+    try {
+      const result = await submitVerification(id);
+      setVerificationResult(result);
+    } catch (e) {
+      setFetchError(e instanceof Error ? e.message : "Unexpected error");
+    } finally {
+      setShowResult(true);
+      setLoading(false);
+    }
   }
 
   return (
@@ -88,7 +81,12 @@ export default function Home() {
 
           {/* Result panel — appears after verification */}
           <div className="mb-8">
-            <ResultPanel data={verificationResult} visible={showResult} />
+            <ResultPanel
+              data={verificationResult}
+              contractId={contractId}
+              fetchError={fetchError}
+              visible={showResult}
+            />
           </div>
 
           {/* Accordion — learn more */}
