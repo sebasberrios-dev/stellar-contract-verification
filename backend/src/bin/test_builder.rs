@@ -19,7 +19,7 @@ fn main() {
     let fake_dir = temp_dir();
     std::fs::create_dir_all(&fake_dir).unwrap();
     let start = Instant::now();
-    let result = build_wasm(&fake_dir, Some("evilcorp/backdoor:latest"));
+    let result = build_wasm(&fake_dir, Some("evilcorp/backdoor:latest"), &[], &Default::default());
     let elapsed = start.elapsed();
     match result {
         Err(AppError::BuildFailed(msg)) => {

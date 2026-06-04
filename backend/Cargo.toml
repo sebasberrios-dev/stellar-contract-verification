@@ -2,6 +2,7 @@
 name = "stellar-contract-verification"
 version = "0.1.0"
 edition = "2021"
+default-run = "stellar-contract-verification"
 
 [dependencies]
 axum = "0.7"

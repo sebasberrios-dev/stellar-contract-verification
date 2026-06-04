@@ -58,7 +58,8 @@ fn main() {
         ("source_rev", "7b168174ae1268dab91a0190d80a94ab7ff41b59"),
         ("bldimg", "docker.io/stellar/stellar-cli@sha256:cb2fc3"),
         ("rsver", "1.95.0"),       // extra key — should be ignored
-        ("bldopt", "--release"),   // extra key — should be ignored
+        ("bldopt", "--profile=release"),
+        ("bldopt", "--manifest-path=increment/Cargo.toml"),
     ]);
     let wasm = build_wasm_with_custom_section("contractmetav0", &content);
 
@@ -75,6 +76,9 @@ fn main() {
         meta.bldimg.as_deref(),
         Some("docker.io/stellar/stellar-cli@sha256:cb2fc3")
     );
+    assert_eq!(meta.bldopt.len(), 2);
+    assert_eq!(meta.bldopt[0], "--profile=release");
+    assert_eq!(meta.bldopt[1], "--manifest-path=increment/Cargo.toml");
     let level = get_verification_level(&meta);
     assert_eq!(level, 2, "level should be 2 with repo+rev");
     println!("  ✓ source_repo: {}", meta.source_repo.unwrap());

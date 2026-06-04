@@ -8,13 +8,39 @@ pub struct Sep58Metadata {
     pub source_repo: Option<String>,
     pub source_rev: Option<String>,
     pub bldimg: Option<String>,
+    /// Repeated SEP-58 `bldopt` entries, e.g. `--profile=release`, `--manifest-path=increment/Cargo.toml`.
+    pub bldopt: Vec<String>,
 }
 
 /// Extracts SEP-58 metadata from the `contractmetav0` custom section of a WASM binary.
 /// Returns `AppError::NoMetadata` if the section is absent.
 pub fn extract_sep58(wasm_bytes: &[u8]) -> Result<Sep58Metadata, AppError> {
-    let content = find_contractmetav0(wasm_bytes)?;
-    parse_metadata_content(content)
+    let sections = find_all_contractmetav0(wasm_bytes)?;
+    let mut meta = Sep58Metadata::default();
+    for content in sections {
+        merge_metadata(&mut meta, parse_metadata_content(content)?);
+    }
+    if meta.source_repo.is_none()
+        && meta.source_rev.is_none()
+        && meta.bldimg.is_none()
+        && meta.bldopt.is_empty()
+    {
+        return Err(AppError::NoMetadata);
+    }
+    Ok(meta)
+}
+
+fn merge_metadata(dst: &mut Sep58Metadata, src: Sep58Metadata) {
+    if src.source_repo.is_some() {
+        dst.source_repo = src.source_repo;
+    }
+    if src.source_rev.is_some() {
+        dst.source_rev = src.source_rev;
+    }
+    if src.bldimg.is_some() {
+        dst.bldimg = src.bldimg;
+    }
+    dst.bldopt.extend(src.bldopt);
 }
 
 /// Maps a `Sep58Metadata` to a verification level:
@@ -33,12 +59,13 @@ pub fn get_verification_level(meta: &Sep58Metadata) -> u8 {
 
 // ─── WASM section parser ────────────────────────────────────────────────────
 
-fn find_contractmetav0(wasm: &[u8]) -> Result<&[u8], AppError> {
+fn find_all_contractmetav0(wasm: &[u8]) -> Result<Vec<&[u8]>, AppError> {
     if wasm.len() < 8 || &wasm[..4] != b"\0asm" {
         return Err(AppError::InternalError("Not a valid WASM binary".into()));
     }
 
-    let mut pos = 8; // skip magic (\0asm) + version (4 bytes)
+    let mut pos = 8;
+    let mut sections = Vec::new();
 
     while pos < wasm.len() {
         let section_type = wasm[pos];
@@ -57,7 +84,7 @@ fn find_contractmetav0(wasm: &[u8]) -> Result<&[u8], AppError> {
             let section_bytes = &wasm[pos..section_end];
             if let Some((name, data)) = split_custom_section(section_bytes) {
                 if name == "contractmetav0" {
-                    return Ok(data);
+                    sections.push(data);
                 }
             }
         }
@@ -65,7 +92,11 @@ fn find_contractmetav0(wasm: &[u8]) -> Result<&[u8], AppError> {
         pos = section_end;
     }
 
-    Err(AppError::NoMetadata)
+    if sections.is_empty() {
+        Err(AppError::NoMetadata)
+    } else {
+        Ok(sections)
+    }
 }
 
 /// Splits a raw custom section payload into (name, content).
@@ -114,7 +145,8 @@ fn parse_metadata_content(content: &[u8]) -> Result<Sep58Metadata, AppError> {
             "source_repo" => meta.source_repo = Some(val),
             "source_rev" => meta.source_rev = Some(val),
             "bldimg" => meta.bldimg = Some(val),
-            _ => {} // ignore rsver, rssdkver, bldopt, etc.
+            "bldopt" => meta.bldopt.push(val),
+            _ => {} // ignore rsver, rssdkver, etc.
         }
     }
 

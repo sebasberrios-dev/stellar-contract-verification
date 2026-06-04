@@ -19,7 +19,7 @@ fn main() {
 
     println!("\nRunning docker build (stellar/stellar-cli:latest) ...");
     let build_start = Instant::now();
-    let result = build_wasm(&contract_dir, None);
+    let result = build_wasm(&contract_dir, None, &[], &Default::default());
     println!("  build took {}s", build_start.elapsed().as_secs());
 
     match result {
