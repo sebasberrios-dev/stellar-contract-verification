@@ -28,13 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="es"
+      lang="en"
       className={`h-full antialiased ${GeistSans.variable} ${GeistMono.variable} ${inter.variable} ${jetbrainsMono.variable}`}
-      style={{ background: "#000000" }}
+      style={{ background: "#0a0b0f" }}
     >
       <body
         className="min-h-full flex flex-col"
-        style={{ background: "#000000", color: "#ffffff", fontFamily: "var(--font-inter, ui-sans-serif, system-ui, sans-serif)" }}
+        style={{ background: "#0a0b0f", color: "#ffffff", fontFamily: "var(--font-inter, ui-sans-serif, system-ui, sans-serif)" }}
         suppressHydrationWarning
       >
         {children}
