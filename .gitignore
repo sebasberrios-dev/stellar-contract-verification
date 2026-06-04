@@ -32,6 +32,7 @@ logs/
 
 # Machine-specific CA bundle (corporate TLS proxy)
 backend/.ca-bundle.pem
+backend/deploy-workspace/repo/
 
 # Temporary files
 tmp/
