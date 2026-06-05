@@ -1,7 +1,7 @@
 # ── Stage 1: build Rust binary ───────────────────────────────────────────────
 # Build context is the REPO ROOT (Railway always uses repo root).
 # All paths are relative to the repo root.
-FROM rust:1.82-bookworm AS builder
+FROM rust:1.87-bookworm AS builder
 
 WORKDIR /app
 
