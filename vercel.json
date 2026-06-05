@@ -1,8 +1,5 @@
 {
   "framework": "nextjs",
   "buildCommand": "pnpm build",
-  "installCommand": "pnpm install",
-  "env": {
-    "BACKEND_URL": "@backend_url"
-  }
+  "installCommand": "pnpm install"
 }
