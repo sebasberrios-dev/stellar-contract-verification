@@ -1,10 +1,12 @@
 # ── Stage 1: build Rust binary ───────────────────────────────────────────────
+# Build context is the REPO ROOT (Railway always uses repo root).
+# All paths are relative to the repo root.
 FROM rust:1.82-bookworm AS builder
 
 WORKDIR /app
 
 # Cache dependencies separately from source
-COPY Cargo.toml Cargo.lock ./
+COPY backend/Cargo.toml backend/Cargo.lock ./
 RUN mkdir -p src/bin && \
     echo 'fn main(){}' > src/main.rs && \
     echo 'fn main(){}' > src/bin/test_rpc.rs && \
@@ -15,7 +17,7 @@ RUN mkdir -p src/bin && \
     cargo build --release && \
     rm -rf src
 
-COPY src ./src
+COPY backend/src ./src
 RUN touch src/main.rs && cargo build --release --bin stellar-contract-verification
 
 # ── Stage 2: runtime with Docker Engine + Git ────────────────────────────────
@@ -38,7 +40,7 @@ RUN apt-get update && apt-get install -y \
 COPY --from=builder /app/target/release/stellar-contract-verification \
     /usr/local/bin/stellar-contract-verification
 
-COPY entrypoint.sh /entrypoint.sh
+COPY backend/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 ENV PORT=8088
