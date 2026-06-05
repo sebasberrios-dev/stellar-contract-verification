@@ -1,30 +1,15 @@
 #!/bin/bash
-set -e
 
-# Start Docker daemon in background (required for DinD on Railway)
+# Start Docker daemon in background (needed for /verify builds)
+# Don't wait for it — the Axum server must start immediately for healthcheck
 dockerd --host=unix:///var/run/docker.sock \
-        --host=tcp://127.0.0.1:2375 \
-        --storage-driver=overlay2 &
-DOCKERD_PID=$!
+        --storage-driver=overlay2 \
+        --log-level=warn \
+        2>&1 | sed 's/^/[dockerd] /' &
 
-# Wait up to 30 seconds for the daemon to be ready
-echo "[entrypoint] Waiting for Docker daemon..."
-for i in $(seq 1 30); do
-    if docker info >/dev/null 2>&1; then
-        echo "[entrypoint] Docker daemon ready (attempt $i)"
-        break
-    fi
-    if [ $i -eq 30 ]; then
-        echo "[entrypoint] Docker daemon did not start in time" >&2
-        exit 1
-    fi
-    sleep 1
-done
+# Give dockerd a moment to initialize without blocking
+sleep 2
 
-# Pull the build image ahead of time so the first verify request is faster
-echo "[entrypoint] Pre-pulling stellar-cli image..."
-docker pull stellar/stellar-cli:latest || true
-
-# Start the Axum backend (replaces this shell process)
+# Start the Axum backend (Railway healthcheck hits /health immediately)
 echo "[entrypoint] Starting backend on port ${PORT:-8088}"
 exec stellar-contract-verification
