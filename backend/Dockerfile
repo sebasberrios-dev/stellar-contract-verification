@@ -41,7 +41,7 @@ COPY --from=builder /app/target/release/stellar-contract-verification \
     /usr/local/bin/stellar-contract-verification
 
 COPY backend/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 ENV PORT=8088
 EXPOSE 8088
