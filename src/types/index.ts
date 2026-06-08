@@ -1,3 +1,42 @@
+// ── Backend schema types (SEP-58 / SEP-1945) ─────────────────────────────
+
+export type VerificationStatus = "verified" | "mismatch" | "failed" | "unverified";
+
+export interface VerifierInfo {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface VerificationEntry {
+  metadata_source: string;
+  verified: boolean;
+  verification_level: number;
+  status: VerificationStatus;
+  source_repo: string | null;
+  source_rev: string | null;
+  bldimg: string | null;
+  build_image: string | null;
+  bldopt: string[];
+  onchain_hash: string;
+  rebuilt_hash: string | null;
+  wasm_hash_match: boolean;
+  processed_at: string | null;
+  verifier: VerifierInfo;
+  error: string | null;
+}
+
+export interface ContractLookupResponse {
+  schema_version: string;
+  contract_id: string;
+  wasm_hash: string | null;
+  network: string;
+  updated_at: string | null;
+  verifications: VerificationEntry[];
+}
+
+// ── Legacy flat response (POST /verify — used by ResultPanel until F3) ───
+
 export interface VerifyRequest {
   contract_id: string;
 }
@@ -14,7 +53,16 @@ export interface VerifyResponse {
   error: string | null;
 }
 
-export type VerificationStatus = "idle" | "loading" | "success" | "error";
+// ── UI flow state ─────────────────────────────────────────────────────────
+
+export type VerifyFlowState =
+  | "idle"
+  | "loading-cache"
+  | "cached-result"
+  | "verifying"
+  | "error";
+
+// ── Display helpers ───────────────────────────────────────────────────────
 
 export const LEVEL_LABELS: Record<number, string> = {
   0: "Unknown",

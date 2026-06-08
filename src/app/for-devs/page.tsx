@@ -53,8 +53,8 @@ const STEPS = [
 
 const FAQ_ITEMS = [
   {
-    q: "Does it work on mainnet and testnet?",
-    a: "Yes. CSV verifies on both. Select the network before entering the Contract ID.",
+    q: "Is mainnet supported?",
+    a: "Testnet only — mainnet support is coming soon. Make sure to select testnet before entering a Contract ID.",
   },
   {
     q: "How long does verification take?",
@@ -192,9 +192,8 @@ export default function ForDevsPage() {
             Embed SEP-58 metadata so anyone can verify your source code matches what&apos;s deployed on Stellar.
           </p>
           <div className="flex items-center justify-center gap-6 mb-8">
-            <NetworkDot color="#22C55E" label="Mainnet" />
-            <NetworkDot color="#3B82F6" label="Testnet" />
-            <NetworkDot color="#F59E0B" label="Futurenet" />
+            <NetworkDot color="#22C55E" label="Testnet" />
+            <NetworkDot color="#4B5563" label="Mainnet — coming soon" />
           </div>
           <Link
             href="/for-devs/tutorial"

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import type { VerifyResponse } from "../../../types/index";
+import type { ContractLookupResponse } from "../../../types/index";
 
 interface ErrorResponse {
   error: string;
@@ -8,7 +8,7 @@ interface ErrorResponse {
 
 export async function POST(
   req: NextRequest
-): Promise<NextResponse<VerifyResponse | ErrorResponse>> {
+): Promise<NextResponse<ContractLookupResponse | ErrorResponse>> {
   let body: unknown;
 
   try {

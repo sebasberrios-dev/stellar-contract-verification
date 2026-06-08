@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { Search, Loader2 } from "lucide-react";
+import type { VerifyFlowState } from "../types/index";
 
 interface VerificationFormProps {
   onVerify: (contractId: string) => Promise<void>;
-  loading: boolean;
+  flowState: VerifyFlowState;
 }
 
-export default function VerificationForm({ onVerify, loading }: VerificationFormProps) {
+export default function VerificationForm({ onVerify, flowState }: VerificationFormProps) {
   const [contractId, setContractId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
@@ -41,7 +42,33 @@ export default function VerificationForm({ onVerify, loading }: VerificationForm
     }
   }
 
-  const isDisabled = contractId.trim() === "" || loading;
+  const isLoading = flowState === "loading-cache" || flowState === "verifying";
+  const isDisabled = contractId.trim() === "" || isLoading;
+
+  function buttonContent() {
+    if (flowState === "loading-cache") {
+      return (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Checking cache...</span>
+        </>
+      );
+    }
+    if (flowState === "verifying") {
+      return (
+        <>
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>Rebuilding from source... This may take 2–6 minutes</span>
+        </>
+      );
+    }
+    return (
+      <>
+        <Search className="w-4 h-4" />
+        <span>Verify Contract</span>
+      </>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="w-full">
@@ -53,7 +80,7 @@ export default function VerificationForm({ onVerify, loading }: VerificationForm
             onChange={handleChange}
             placeholder="Contract ID (e.g. CA...)"
             maxLength={64}
-            disabled={loading}
+            disabled={isLoading}
             className="w-full bg-[#111318] border border-[#1e2130] text-white rounded-lg px-4 py-3 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-[#3b82f6] focus:shadow-[0_0_12px_rgba(59,130,246,0.2)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             aria-describedby={error && touched ? "contract-error" : undefined}
             aria-invalid={error && touched ? true : undefined}
@@ -71,17 +98,7 @@ export default function VerificationForm({ onVerify, loading }: VerificationForm
           disabled={isDisabled}
           className="w-full flex items-center justify-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-semibold py-3 px-6 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Verifying...</span>
-            </>
-          ) : (
-            <>
-              <Search className="w-4 h-4" />
-              <span>Verify Contract</span>
-            </>
-          )}
+          {buttonContent()}
         </button>
       </div>
     </form>

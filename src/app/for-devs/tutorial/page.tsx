@@ -317,6 +317,51 @@ export default function TutorialPage() {
           </StepWrapper>
         </section>
 
+        {/* GET-first API reference */}
+        <section className="mb-14">
+          <h2 className="text-white font-semibold text-xl mb-2">Query the API directly</h2>
+          <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+            The UI does this automatically, but you can also call the API from CI or scripts.
+            Always check the cache first — if the contract is already verified it returns instantly.
+          </p>
+
+          <div className="space-y-6">
+            <div>
+              <p className="text-slate-400 text-sm mb-3">
+                <span className="text-cyan-400 font-medium">Check if already verified</span>
+                {" "}(instant):
+              </p>
+              <CodeBlock
+                code={`curl "https://stellar-contract-verification.vercel.app/api/v1/contracts/YOUR_CONTRACT_ID/verifications?network=testnet"`}
+              />
+            </div>
+
+            <div>
+              <p className="text-slate-400 text-sm mb-3">
+                <span className="text-cyan-400 font-medium">Trigger verification</span>
+                {" "}(2–6 min):
+              </p>
+              <CodeBlock
+                code={`curl -X POST https://stellar-contract-verification.fly.dev/verify \\
+  -H "Content-Type: application/json" \\
+  -d '{"contract_id": "YOUR_CONTRACT_ID"}'`}
+                variant="blue"
+              />
+            </div>
+
+            <div className="flex gap-2.5 bg-cyan-500/5 border border-cyan-500/20 text-cyan-300 text-sm rounded-lg px-4 py-3">
+              <span aria-hidden="true">ℹ</span>
+              <p className="leading-relaxed">
+                Only testnet is supported today. Pass{" "}
+                <code className="bg-black/30 text-cyan-200 font-mono text-xs px-1.5 py-0.5 rounded">
+                  ?network=testnet
+                </code>{" "}
+                — mainnet support is coming soon.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Troubleshooting */}
         <section className="mb-14">
           <h2 className="text-white font-semibold text-xl mb-6">Troubleshooting</h2>

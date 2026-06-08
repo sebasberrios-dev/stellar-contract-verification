@@ -1,7 +1,9 @@
-import { VerificationStatus, VerifyResponse, LEVEL_LABELS } from "../types/index";
+import { VerifyResponse, LEVEL_LABELS } from "../types/index";
+
+type LegacyStatus = "idle" | "loading" | "success" | "error";
 
 interface VerificationResultProps {
-  status: VerificationStatus;
+  status: LegacyStatus;
   result: VerifyResponse | null;
   error: string | null;
 }
