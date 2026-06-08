@@ -27,6 +27,7 @@ curl -fsSL https://get.docker.com | sh
 git clone -b demo-backend https://github.com/sebasberrios-dev/stellar-contract-verification.git
 cd stellar-contract-verification/deploy/digitalocean
 cp .env.example .env
+mkdir -p /tmp/soroban-verify
 docker compose up -d --build
 
 ufw allow 22 && ufw allow 8088 && ufw --force enable

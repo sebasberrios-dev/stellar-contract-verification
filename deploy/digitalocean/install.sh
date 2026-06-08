@@ -27,6 +27,7 @@ echo "[4/6] Pre-pulling build image..."
 docker pull stellar/stellar-cli:latest || true
 
 echo "[5/6] Building and starting backend..."
+mkdir -p /tmp/soroban-verify
 docker compose up -d --build
 
 echo "[6/6] Opening firewall (ufw)..."

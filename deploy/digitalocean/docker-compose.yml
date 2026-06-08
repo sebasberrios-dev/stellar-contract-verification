@@ -6,6 +6,10 @@ services:
     ports:
       - "8088:8088"
     env_file: .env
+    environment:
+      # Must match the bind mount below so docker run -v uses host paths.
+      VERIFY_WORK_DIR: /tmp/soroban-verify
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/soroban-verify:/tmp/soroban-verify
     restart: unless-stopped

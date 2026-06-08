@@ -11,16 +11,28 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 use wait_timeout::ChildExt;
 
-/// Base directory for all verification workspaces.
-/// On Linux this resolves to `/tmp/soroban-verify`.
+/// Base directory for verification workspaces (git clones + docker bind mounts).
+///
+/// When this backend runs inside Docker but invokes the **host** daemon via
+/// `/var/run/docker.sock`, workspace paths must live on the host filesystem.
+/// Set `VERIFY_WORK_DIR` (e.g. `/tmp/soroban-verify`) and bind-mount that path
+/// in compose so `docker run -v <path>:/workspace` resolves correctly.
 fn base_dir() -> PathBuf {
+    if let Ok(dir) = std::env::var("VERIFY_WORK_DIR") {
+        let dir = dir.trim();
+        if !dir.is_empty() {
+            return PathBuf::from(dir);
+        }
+    }
     std::env::temp_dir().join("soroban-verify")
 }
 
-/// Generates a unique workspace path: `<temp>/soroban-verify/<uuid>`.
+/// Generates a unique workspace path: `<work_dir>/soroban-verify/<uuid>` or `<VERIFY_WORK_DIR>/<uuid>`.
 /// Does NOT create the directory — `git clone` creates it.
 pub fn temp_dir() -> PathBuf {
-    base_dir().join(uuid::Uuid::new_v4().to_string())
+    let base = base_dir();
+    let _ = std::fs::create_dir_all(&base);
+    base.join(uuid::Uuid::new_v4().to_string())
 }
 
 /// RAII guard that recursively deletes a directory when dropped.

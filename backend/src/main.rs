@@ -72,5 +72,9 @@ async fn main() {
 }
 
 async fn health_handler() -> Json<serde_json::Value> {
-    Json(json!({ "status": "ok" }))
+    Json(json!({
+        "status": "ok",
+        "build": env!("CARGO_PKG_VERSION"),
+        "work_dir": std::env::var("VERIFY_WORK_DIR").unwrap_or_else(|_| std::env::temp_dir().join("soroban-verify").to_string_lossy().into_owned()),
+    }))
 }
