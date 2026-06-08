@@ -10,7 +10,10 @@ export async function submitVerification(contractId: string): Promise<VerifyResp
 
   const response = await fetch(`${backendUrl}/verify`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    },
     body: JSON.stringify({ contract_id: contractId }),
   });
 
