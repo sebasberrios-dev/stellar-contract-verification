@@ -1,6 +1,6 @@
 # DigitalOcean Deployment
 
-Deploy the verification backend on a VPS where Docker runs on the **host** (not nested). This fixes the `Cannot connect to the Docker daemon` error seen on Fly.io.
+Deploy the verification backend on a VPS where Docker runs on the **host** (not nested inside the backend container).
 
 ## Droplet requirements
 

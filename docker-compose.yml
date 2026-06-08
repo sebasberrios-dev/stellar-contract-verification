@@ -1,13 +1,15 @@
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile.prod
     ports:
-      - "8080:8080"
+      - "8088:8088"
     environment:
-      - SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
-      - PORT=8080
+      SOROBAN_RPC_URL: https://soroban-testnet.stellar.org
+      PORT: 8088
+      ALLOWED_ORIGIN: "*"
+      VERIFY_WORK_DIR: /tmp/soroban-verify
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/soroban-verify:/tmp/soroban-verify

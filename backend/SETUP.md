@@ -11,7 +11,7 @@
 | `src/errors.rs` | Enum `AppError` con `IntoResponse` para cada variante |
 | `src/lib.rs` | Expone módulos `errors`, `rpc`, `metadata`, `builder`, `routes` |
 | `.env` | Variables de entorno (`SOROBAN_RPC_URL`, `PORT`, `BUILD_CA_BUNDLE`) |
-| `Dockerfile` | Multi-stage build para producción |
+| `Dockerfile.prod` | Imagen de producción para VPS (Docker del host vía socket) |
 | `../docker-compose.yml` | Servicio backend con acceso al socket Docker |
 
 ### Dependencias (`Cargo.toml`)
