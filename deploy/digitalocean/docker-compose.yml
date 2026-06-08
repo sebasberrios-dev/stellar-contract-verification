@@ -9,7 +9,11 @@ services:
     environment:
       # Must match the bind mount below so docker run -v uses host paths.
       VERIFY_WORK_DIR: /tmp/soroban-verify
+      DATABASE_URL: /var/lib/csv/verifications.db
+      VERIFIER_ID: csv-stellar
+      DEFAULT_NETWORK: testnet
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /tmp/soroban-verify:/tmp/soroban-verify
+      - /var/lib/csv:/var/lib/csv
     restart: unless-stopped

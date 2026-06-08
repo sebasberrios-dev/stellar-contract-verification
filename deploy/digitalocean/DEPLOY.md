@@ -46,6 +46,16 @@ curl -X POST http://YOUR_DROPLET_IP:8088/verify \
   -d '{"contract_id":"YOUR_CONTRACT_ID"}'
 ```
 
+## Read cached verifications (GET)
+
+```bash
+curl "http://YOUR_DROPLET_IP:8088/v1/contracts/YOUR_CONTRACT_ID/verifications?network=testnet"
+
+curl "http://YOUR_DROPLET_IP:8088/v1/wasm/WASM_SHA256_HEX/verifications?network=testnet"
+```
+
+Results are persisted after the first successful `POST /verify` for a given contract + on-chain hash (cache policy A).
+
 ## Logs
 
 ```bash

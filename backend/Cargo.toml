@@ -21,3 +21,5 @@ stellar-xdr = { version = "26", features = ["base64"] }
 stellar-strkey = "0.0"
 uuid = { version = "1", features = ["v4"] }
 wait-timeout = "0.2"
+rusqlite = { version = "0.32", features = ["bundled"] }
+chrono = { version = "0.4", features = ["clock"] }
