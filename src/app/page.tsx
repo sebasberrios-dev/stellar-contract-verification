@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Navbar from "../components/Navbar";
 import Logo from "../components/Logo";
-import WalletButton from "../components/WalletButton";
-import NetworkBadge from "../components/NetworkBadge";
-import ParticlesBackground from "../components/ParticlesBackground";
+import StarryBackground from "../components/StarryBackground";
 import CircuitTraces from "../components/CircuitTraces";
 import ShieldLogo from "../components/ShieldLogo";
 import VerificationForm from "../components/VerificationForm";
@@ -41,19 +40,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen" style={{ background: "#0a0b0f" }}>
-      {/* Navbar */}
-      <header className="relative z-20 border-b border-white/10 px-6 py-4 backdrop-blur-sm bg-[#0a0b0f]/80">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Logo />
-          <NetworkBadge />
-          <WalletButton />
-        </div>
-      </header>
+      <Navbar />
 
       <main className="relative">
         {/* Background layers */}
-        <ParticlesBackground />
+        <StarryBackground />
         <CircuitTraces />
+
+        {/* CSV logo watermark — sits above the starry background, below the content */}
+        <div
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] w-[600px] h-[600px] opacity-[0.06] pointer-events-none"
+          aria-hidden="true"
+        >
+          <Logo variant="full" className="w-full h-full" />
+        </div>
 
         {/* Content */}
         <div className="relative z-10 max-w-2xl mx-auto px-6 py-12">
@@ -102,7 +102,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/10 px-6 py-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-sm">
-          <span>© 2024 CSV Stellar Verification. Powered by Soroban.</span>
+          <span>© 2026 CSV Stellar Verification. Powered by Soroban.</span>
           <nav className="flex items-center gap-5">
             <a href="#" className="hover:text-slate-300 transition-colors" suppressHydrationWarning>Terms</a>
             <a href="#" className="hover:text-slate-300 transition-colors" suppressHydrationWarning>Privacy</a>
