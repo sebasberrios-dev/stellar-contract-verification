@@ -26,7 +26,7 @@ pub struct VerifyRequest {
     pub contract_id: String,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VerifyResponse {
     pub verified: bool,
     pub verification_level: u8,
