@@ -44,7 +44,7 @@ pub async fn wasm_verifications_handler(
     Path(wasm_hash): Path<String>,
     Query(query): Query<NetworkQuery>,
 ) -> Response {
-    wasm_lookup(state, wasm_hash, query).await
+    wasm_lookup(state, &wasm_hash, query).await
 }
 
 /// SEP registry alias: `GET /wasms/:wasm_hash.json`
@@ -53,15 +53,15 @@ pub async fn wasm_sep_handler(
     Path(wasm_hash): Path<String>,
     Query(query): Query<NetworkQuery>,
 ) -> Response {
-    wasm_lookup(state, wasm_hash, query).await
+    wasm_lookup(state, &wasm_hash, query).await
 }
 
 async fn wasm_lookup(
     state: AppState,
-    wasm_hash: Path<String>,
+    wasm_hash: &str,
     query: NetworkQuery,
 ) -> Response {
-    let wasm_hash = normalize_wasm_hash(&wasm_hash);
+    let wasm_hash = normalize_wasm_hash(wasm_hash);
 
     if let Err(msg) = validate_wasm_hash(&wasm_hash) {
         return bad_request(msg, "invalid_wasm_hash");

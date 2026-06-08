@@ -2,7 +2,7 @@ mod sqlite;
 
 pub use sqlite::SqliteVerificationStore;
 
-use crate::routes::{VerificationStatus, VerifierInfo, VerifyResponse};
+use crate::routes::VerifyResponse;
 use serde::Serialize;
 
 pub const SCHEMA_VERSION: &str = "1.0";
