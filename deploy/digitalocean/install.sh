@@ -14,6 +14,8 @@ if ! command -v docker >/dev/null 2>&1; then
 fi
 
 echo "[2/6] Cloning repository..."
+# Must leave INSTALL_DIR before rm -rf if we're inside it (Web Console cwd issue)
+cd /root
 rm -rf "$INSTALL_DIR"
 git clone -b "$REPO_BRANCH" --depth 1 "$REPO_URL" "$INSTALL_DIR"
 
