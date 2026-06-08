@@ -52,7 +52,20 @@ curl -X POST http://YOUR_DROPLET_IP:8088/verify \
 curl "http://YOUR_DROPLET_IP:8088/v1/contracts/YOUR_CONTRACT_ID/verifications?network=testnet"
 
 curl "http://YOUR_DROPLET_IP:8088/v1/wasm/WASM_SHA256_HEX/verifications?network=testnet"
+
+# SEP registry alias (same response as /v1/wasm/.../verifications)
+curl "http://YOUR_DROPLET_IP:8088/wasms/WASM_SHA256_HEX.json?network=testnet"
 ```
+
+Example (Trackify on testnet):
+
+```bash
+curl "http://127.0.0.1:8088/v1/contracts/CCL7QSQ3FBG5FIUHNHZB37ZHDRTV4XN6AS5LQMSKZHA24D2JZQOZ4CHP/verifications?network=testnet"
+
+curl "http://127.0.0.1:8088/wasms/687a8db6fceed75df43876b0a09714f5bf758ec869982b49cd512009f90f903e.json?network=testnet"
+```
+
+`GET /health` includes `schema_version` and the list of supported endpoints.
 
 Results are persisted after the first successful `POST /verify` for a given contract + on-chain hash (cache policy A).
 

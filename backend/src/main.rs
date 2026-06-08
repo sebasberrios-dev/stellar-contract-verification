@@ -11,9 +11,12 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use stellar_contract_verification::routes::{
-    contract_verifications_handler, verify_handler, wasm_verifications_handler, AppState,
+    contract_verifications_handler, verify_handler, wasm_sep_handler, wasm_verifications_handler,
+    AppState,
 };
-use stellar_contract_verification::store::{SqliteVerificationStore, VerificationStore};
+use stellar_contract_verification::store::{
+    SqliteVerificationStore, VerificationStore, SCHEMA_VERSION,
+};
 
 #[tokio::main]
 async fn main() {
@@ -105,6 +108,7 @@ async fn main() {
             "/v1/wasm/:wasm_hash/verifications",
             get(wasm_verifications_handler),
         )
+        .route("/wasms/:wasm_hash.json", get(wasm_sep_handler))
         .with_state(state)
         .layer(cors);
 
@@ -128,10 +132,18 @@ async fn health_handler(
     let db_ok = store.ping().is_ok();
     Json(json!({
         "status": if db_ok { "ok" } else { "degraded" },
+        "schema_version": SCHEMA_VERSION,
         "build": env!("CARGO_PKG_VERSION"),
         "verifier_id": verifier_id,
         "network": std::env::var("DEFAULT_NETWORK").unwrap_or_else(|_| "testnet".into()),
         "database_ok": db_ok,
         "work_dir": std::env::var("VERIFY_WORK_DIR").unwrap_or_else(|_| std::env::temp_dir().join("soroban-verify").to_string_lossy().into_owned()),
+        "endpoints": [
+            "GET /health",
+            "POST /verify",
+            "GET /v1/contracts/:contract_id/verifications",
+            "GET /v1/wasm/:wasm_hash/verifications",
+            "GET /wasms/:wasm_hash.json"
+        ],
     }))
 }
