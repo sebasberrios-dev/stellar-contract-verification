@@ -81,18 +81,21 @@ export default function ResultPanel({ data, contractId, fetchError, visible }: R
     );
   }
 
-  // Hash mismatch — level ≥ 2 but verified = false
+  // Build failed or hash mismatch — level ≥ 2 but verified = false
   if (!data.verified && data.verification_level >= 2) {
+    const buildFailed = Boolean(data.error && !data.rebuilt_hash);
     return (
       <div className="animate-enter bg-[#111318] border border-red-500/40 rounded-2xl p-6 w-full">
         <div className="flex items-center gap-3 mb-4">
           <span className="text-red-400 text-lg">✗</span>
           <span className="text-red-400 font-semibold tracking-widest text-sm uppercase">
-            Hash Mismatch
+            {buildFailed ? "Build Failed" : "Hash Mismatch"}
           </span>
         </div>
         <p className="text-slate-400 text-sm mb-4">
-          The rebuilt WASM does not match the deployed contract.
+          {buildFailed
+            ? "The verifier could not rebuild the contract from the embedded source metadata."
+            : "The rebuilt WASM does not match the deployed contract."}
         </p>
         <div className="grid grid-cols-1 gap-3 mb-4">
           <div className="flex flex-col gap-1">

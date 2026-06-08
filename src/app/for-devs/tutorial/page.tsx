@@ -29,9 +29,9 @@ const DEPLOY_CODE = `stellar contract deploy \\
   --network testnet \\
   --source YOUR_ACCOUNT_NAME`;
 
-const API_CURL_CODE = `curl -X POST https://stellar-contract-verification.fly.dev/verify \\
+const API_CURL_CODE = `curl -X POST https://stellar-contract-verification.vercel.app/api/verify \\
   -H "Content-Type: application/json" \\
-  -d '{"contract_id": "CDZIBWL67BFXPUKXEKYMIXH5AGLUBJVS4MW5EO6FHHNYX7IGRPBQVHFQ"}'`;
+  -d '{"contract_id": "YOUR_CONTRACT_ID"}'`;
 
 const PREREQUISITES = [
   "stellar-cli installed (v26+)",
@@ -192,7 +192,7 @@ function VerifyStep() {
         type="text"
         value={contractId}
         onChange={(e) => setContractId(e.target.value)}
-        placeholder="CDZIBWL67BFXPUKXEKYMIXH5AGLUBJVS4MW5EO6FHHNYX7IGRPBQVHFQ"
+        placeholder="YOUR_CONTRACT_ID"
         spellCheck={false}
         className="w-full bg-[#080e1a] border border-white/10 rounded-lg px-4 py-3 text-slate-200 font-mono text-sm placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 transition-colors mb-4"
       />
