@@ -1,0 +1,33 @@
+# Production image for VPS (DigitalOcean): uses HOST Docker via socket mount.
+# Build context: repo root. No nested dockerd.
+FROM rust:1.87-bookworm AS builder
+
+WORKDIR /app
+
+COPY backend/Cargo.toml backend/Cargo.lock ./
+RUN mkdir -p src/bin && \
+    echo 'fn main(){}' > src/main.rs && \
+    echo 'fn main(){}' > src/bin/test_rpc.rs && \
+    echo 'fn main(){}' > src/bin/test_metadata.rs && \
+    echo 'fn main(){}' > src/bin/test_builder.rs && \
+    echo 'fn main(){}' > src/bin/test_docker_build.rs && \
+    echo 'fn main(){}' > src/bin/test_increment_verify.rs && \
+    cargo build --release && \
+    rm -rf src
+
+COPY backend/src ./src
+RUN touch src/main.rs && cargo build --release --bin stellar-contract-verification
+
+FROM debian:bookworm-slim
+
+RUN apt-get update && apt-get install -y \
+        ca-certificates git docker.io \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/target/release/stellar-contract-verification \
+    /usr/local/bin/stellar-contract-verification
+
+ENV PORT=8088
+EXPOSE 8088
+
+CMD ["stellar-contract-verification"]
