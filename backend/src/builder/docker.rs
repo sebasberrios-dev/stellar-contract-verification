@@ -46,6 +46,80 @@ fn validate_meta_value(val: &str) -> Result<(), AppError> {
     Ok(())
 }
 
+/// When SEP-58 metadata omits `bldopt=--manifest-path=...` but the contract lives in a
+/// subdirectory (common in monorepos), pick the sole Soroban `Cargo.toml` automatically.
+fn augment_bldopts(source_dir: &Path, bldopts: &[String]) -> Result<Vec<String>, AppError> {
+    if bldopts.iter().any(|o| o.contains("manifest-path")) {
+        return Ok(bldopts.to_vec());
+    }
+    if source_dir.join("Cargo.toml").is_file() {
+        return Ok(bldopts.to_vec());
+    }
+
+    let manifests = find_soroban_manifests(source_dir)?;
+    match manifests.len() {
+        0 => Ok(bldopts.to_vec()),
+        1 => {
+            let rel = manifests[0]
+                .strip_prefix(source_dir)
+                .map_err(|_| AppError::BuildFailed("manifest path resolution failed".into()))?;
+            let rel = rel.to_string_lossy().replace('\\', "/");
+            let flag = format!("--manifest-path={rel}");
+            tracing::info!("Auto-detected Soroban manifest: {flag}");
+            let mut out = bldopts.to_vec();
+            out.insert(0, flag);
+            Ok(out)
+        }
+        n => Err(AppError::BuildFailed(format!(
+            "found {n} Soroban Cargo.toml files; embed bldopt=--manifest-path=... in SEP-58 metadata"
+        ))),
+    }
+}
+
+/// Walks `source_dir` for `Cargo.toml` files that look like Soroban contract crates.
+fn find_soroban_manifests(source_dir: &Path) -> Result<Vec<PathBuf>, AppError> {
+    let mut found = Vec::new();
+    collect_soroban_manifests(source_dir, source_dir, &mut found)?;
+    found.sort();
+    Ok(found)
+}
+
+fn collect_soroban_manifests(
+    root: &Path,
+    dir: &Path,
+    found: &mut Vec<PathBuf>,
+) -> Result<(), AppError> {
+    let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
+    if name == "target" || name == "node_modules" || name == ".git" {
+        return Ok(());
+    }
+
+    let manifest = dir.join("Cargo.toml");
+    if manifest.is_file() && looks_like_soroban_contract(&manifest)? {
+        found.push(manifest);
+    }
+
+    for entry in std::fs::read_dir(dir).map_err(|e| {
+        AppError::BuildFailed(format!("failed to scan repo for Cargo.toml: {e}"))
+    })? {
+        let entry = entry.map_err(|e| {
+            AppError::BuildFailed(format!("failed to scan repo for Cargo.toml: {e}"))
+        })?;
+        let path = entry.path();
+        if path.is_dir() {
+            collect_soroban_manifests(root, &path, found)?;
+        }
+    }
+    Ok(())
+}
+
+fn looks_like_soroban_contract(manifest: &Path) -> Result<bool, AppError> {
+    let text = std::fs::read_to_string(manifest).map_err(|e| {
+        AppError::BuildFailed(format!("failed to read {}: {e}", manifest.display()))
+    })?;
+    Ok(text.contains("soroban-sdk") && text.contains("cdylib"))
+}
+
 fn format_build_command(bldopts: &[String], embed: &Sep58Metadata) -> Result<String, AppError> {
     let mut cmd = String::from("stellar contract build");
     for opt in bldopts {
@@ -100,7 +174,8 @@ pub fn build_wasm(
     // against libdbus-1, but does not install it — so the binary fails to load. We install it
     // only if actually missing. The image's own entrypoint also adds the `wasm32v1-none` rust
     // target; since we bypass it, we re-add the target here.
-    let build_cmd = format_build_command(bldopts, embed)?;
+    let effective_bldopts = augment_bldopts(source_dir, bldopts)?;
+    let build_cmd = format_build_command(&effective_bldopts, embed)?;
     let ca_mounted = resolve_ca_bundle_path().is_some();
 
     // When a custom CA is mounted, merge it with the system store so rustup, cargo, and curl
@@ -248,6 +323,31 @@ mod tests {
     fn accepts_tagged_stellar_cli() {
         let img = "stellar/stellar-cli:v22";
         assert_eq!(resolve_image(Some(img)).unwrap(), img);
+    }
+
+    #[test]
+    fn augment_skips_when_root_manifest_exists() {
+        let dir = std::env::temp_dir().join(format!("csv-augment-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("Cargo.toml"), "[dependencies]\nsoroban-sdk = \"21\"\n").unwrap();
+        let out = augment_bldopts(&dir, &[]).unwrap();
+        assert!(out.is_empty());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn augment_detects_nested_soroban_manifest() {
+        let dir = std::env::temp_dir().join(format!("csv-augment-{}", uuid::Uuid::new_v4()));
+        let nested = dir.join("contrato");
+        std::fs::create_dir_all(&nested).unwrap();
+        std::fs::write(
+            nested.join("Cargo.toml"),
+            "[lib]\ncrate-type = [\"cdylib\"]\n[dependencies]\nsoroban-sdk = \"21\"\n",
+        )
+        .unwrap();
+        let out = augment_bldopts(&dir, &[]).unwrap();
+        assert_eq!(out, vec!["--manifest-path=contrato/Cargo.toml".to_string()]);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]
