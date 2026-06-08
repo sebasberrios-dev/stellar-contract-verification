@@ -40,11 +40,24 @@ async fn main() {
     let verifier_id =
         std::env::var("VERIFIER_ID").unwrap_or_else(|_| "csv-stellar".to_string());
 
+    let verifier_name = std::env::var("VERIFIER_NAME")
+        .unwrap_or_else(|_| "CSV Stellar".to_string());
+
+    let verifier_url = std::env::var("VERIFIER_URL").unwrap_or_else(|_| {
+        "https://stellar-contract-verification.vercel.app".to_string()
+    });
+
+    let verifier_info = stellar_contract_verification::routes::VerifierInfo {
+        id: verifier_id.clone(),
+        name: verifier_name.clone(),
+        url: verifier_url.clone(),
+    };
+
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "/var/lib/csv/verifications.db".to_string());
 
     let store: Arc<dyn VerificationStore> = Arc::new(
-        SqliteVerificationStore::open(&database_url, &verifier_id).unwrap_or_else(|e| {
+        SqliteVerificationStore::open(&database_url, verifier_info).unwrap_or_else(|e| {
             tracing::error!("Failed to open verification store at {database_url}: {e}");
             std::process::exit(1);
         }),
@@ -54,6 +67,8 @@ async fn main() {
         rpc_url,
         network,
         verifier_id: verifier_id.clone(),
+        verifier_name,
+        verifier_url,
         store: store.clone(),
     };
 

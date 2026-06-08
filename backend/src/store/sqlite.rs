@@ -1,17 +1,18 @@
-use super::{ContractLookupResponse, VerificationEntry, VerificationStatus, VerificationStore,
-            WasmLookupResponse};
-use crate::routes::VerifyResponse;
+use super::{
+    ContractLookupResponse, VerificationEntry, VerificationStore, WasmLookupResponse,
+};
+use crate::routes::{VerificationStatus, VerifierInfo, VerifyResponse};
 use rusqlite::{params, Connection};
 use std::path::Path;
 use std::sync::{Mutex, MutexGuard};
 
 pub struct SqliteVerificationStore {
     conn: Mutex<Connection>,
-    verifier_id: String,
+    verifier: VerifierInfo,
 }
 
 impl SqliteVerificationStore {
-    pub fn open(db_path: &str, verifier_id: impl Into<String>) -> Result<Self, String> {
+    pub fn open(db_path: &str, verifier: VerifierInfo) -> Result<Self, String> {
         if let Some(parent) = Path::new(db_path).parent() {
             if !parent.as_os_str().is_empty() {
                 std::fs::create_dir_all(parent)
@@ -23,7 +24,7 @@ impl SqliteVerificationStore {
         init_schema(&conn)?;
         Ok(Self {
             conn: Mutex::new(conn),
-            verifier_id: verifier_id.into(),
+            verifier,
         })
     }
 
@@ -38,16 +39,31 @@ impl SqliteVerificationStore {
         verified_at: String,
         response_json: String,
     ) -> Result<VerificationEntry, String> {
-        let result: VerifyResponse =
-            serde_json::from_str(&response_json).map_err(|e| format!("corrupt stored row: {e}"))?;
+        let result = enrich_stored(
+            serde_json::from_str(&response_json)
+                .map_err(|e| format!("corrupt stored row: {e}"))?,
+            &verified_at,
+            &self.verifier,
+        );
         Ok(VerificationEntry {
-            verifier_id: self.verifier_id.clone(),
-            status: VerificationStatus::from_response(&result),
-            verified_at,
             metadata_source: "on_chain",
             result,
         })
     }
+}
+
+fn enrich_stored(mut resp: VerifyResponse, verified_at: &str, verifier: &VerifierInfo) -> VerifyResponse {
+    let img = resp.bldimg.clone().or(resp.build_image.clone());
+    resp.bldimg = img.clone();
+    resp.build_image = img;
+    if resp.processed_at.is_none() {
+        resp.processed_at = Some(verified_at.to_string());
+    }
+    if resp.verifier.id.is_empty() {
+        resp.verifier = verifier.clone();
+    }
+    resp.status = VerificationStatus::from_response(&resp);
+    resp
 }
 
 fn init_schema(conn: &Connection) -> Result<(), String> {
@@ -77,7 +93,7 @@ impl VerificationStore for SqliteVerificationStore {
         let conn = self.lock()?;
         let mut stmt = conn
             .prepare(
-                "SELECT response_json FROM verifications
+                "SELECT verified_at, response_json FROM verifications
                  WHERE contract_id = ?1 AND network = ?2 AND onchain_hash = ?3",
             )
             .map_err(|e| e.to_string())?;
@@ -87,10 +103,11 @@ impl VerificationStore for SqliteVerificationStore {
             .map_err(|e| e.to_string())?;
 
         if let Some(row) = rows.next().map_err(|e| e.to_string())? {
-            let json: String = row.get(0).map_err(|e| e.to_string())?;
+            let verified_at: String = row.get(0).map_err(|e| e.to_string())?;
+            let json: String = row.get(1).map_err(|e| e.to_string())?;
             let resp: VerifyResponse =
                 serde_json::from_str(&json).map_err(|e| format!("corrupt stored row: {e}"))?;
-            return Ok(Some(resp));
+            return Ok(Some(enrich_stored(resp, &verified_at, &self.verifier)));
         }
         Ok(None)
     }
@@ -106,7 +123,10 @@ impl VerificationStore for SqliteVerificationStore {
             return Ok(());
         }
 
-        let verified_at = chrono::Utc::now().to_rfc3339();
+        let verified_at = response
+            .processed_at
+            .clone()
+            .unwrap_or_else(|| chrono::Utc::now().to_rfc3339());
         let response_json =
             serde_json::to_string(response).map_err(|e| format!("failed to encode row: {e}"))?;
 
@@ -149,14 +169,11 @@ impl VerificationStore for SqliteVerificationStore {
             verifications.push(self.entry_from_row(verified_at, response_json)?);
         }
 
-        let onchain_hash = verifications.first().map(|v| v.result.onchain_hash.clone());
-
-        Ok(ContractLookupResponse {
-            contract_id: contract_id.to_string(),
-            network: network.to_string(),
-            onchain_hash,
+        Ok(ContractLookupResponse::new(
+            contract_id.to_string(),
+            network.to_string(),
             verifications,
-        })
+        ))
     }
 
     fn by_wasm_hash(&self, wasm_hash: &str, network: &str) -> Result<WasmLookupResponse, String> {
@@ -181,11 +198,11 @@ impl VerificationStore for SqliteVerificationStore {
             verifications.push(self.entry_from_row(verified_at, response_json)?);
         }
 
-        Ok(WasmLookupResponse {
-            wasm_hash: wasm_hash.to_string(),
-            network: network.to_string(),
+        Ok(WasmLookupResponse::new(
+            wasm_hash.to_string(),
+            network.to_string(),
             verifications,
-        })
+        ))
     }
 
     fn ping(&self) -> Result<(), String> {
@@ -198,27 +215,46 @@ impl VerificationStore for SqliteVerificationStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::routes::VerifyResponse;
+    use crate::routes::VerificationStatus;
 
     fn temp_db() -> (String, SqliteVerificationStore) {
         let path = std::env::temp_dir().join(format!("csv-store-{}.db", uuid::Uuid::new_v4()));
         let path = path.to_string_lossy().into_owned();
-        let store = SqliteVerificationStore::open(&path, "csv-stellar-test").unwrap();
+        let store = SqliteVerificationStore::open(
+            &path,
+            VerifierInfo {
+                id: "csv-stellar-test".into(),
+                name: "CSV Stellar Test".into(),
+                url: "https://example.com".into(),
+            },
+        )
+        .unwrap();
         (path, store)
     }
 
     fn sample_response(hash: &str) -> VerifyResponse {
-        VerifyResponse {
+        let mut resp = VerifyResponse {
             verified: true,
             verification_level: 2,
+            status: VerificationStatus::Verified,
             source_repo: Some("https://github.com/example/repo".into()),
             source_rev: Some("abc123".into()),
-            build_image: None,
+            bldimg: Some("docker.io/stellar/stellar-cli:latest".into()),
+            build_image: Some("docker.io/stellar/stellar-cli:latest".into()),
+            bldopt: vec!["--manifest-path=contracts/foo/Cargo.toml".into()],
             onchain_hash: hash.into(),
             rebuilt_hash: Some(hash.into()),
             wasm_hash_match: true,
+            processed_at: Some("2026-06-08T12:00:00Z".into()),
+            verifier: VerifierInfo {
+                id: "csv-stellar-test".into(),
+                name: "CSV Stellar Test".into(),
+                url: "https://example.com".into(),
+            },
             error: None,
-        }
+        };
+        resp.status = VerificationStatus::from_response(&resp);
+        resp
     }
 
     #[test]
@@ -244,6 +280,8 @@ mod tests {
             .unwrap()
             .unwrap();
         assert!(cached.verified);
+        assert_eq!(cached.status, VerificationStatus::Verified);
+        assert_eq!(cached.bldopt.len(), 1);
 
         let by_contract = store
             .by_contract_id(
@@ -251,10 +289,58 @@ mod tests {
                 "testnet",
             )
             .unwrap();
+        assert_eq!(by_contract.schema_version, "1.0");
         assert_eq!(by_contract.verifications.len(), 1);
+        assert_eq!(by_contract.verifications[0].result.status, VerificationStatus::Verified);
 
         let by_wasm = store.by_wasm_hash(&hash, "testnet").unwrap();
+        assert_eq!(by_wasm.schema_version, "1.0");
         assert_eq!(by_wasm.verifications.len(), 1);
+        assert_eq!(by_wasm.updated_at, Some("2026-06-08T12:00:00Z".into()));
+
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn legacy_row_enriched_on_read() {
+        let (path, store) = temp_db();
+        let hash = "bb".repeat(32);
+        let legacy_json = serde_json::json!({
+            "verified": true,
+            "verification_level": 2,
+            "source_repo": "https://github.com/example/repo",
+            "source_rev": "abc123",
+            "build_image": null,
+            "onchain_hash": hash,
+            "rebuilt_hash": hash,
+            "wasm_hash_match": true,
+            "error": null
+        });
+        let conn = store.lock().unwrap();
+        conn.execute(
+            "INSERT INTO verifications (contract_id, network, onchain_hash, verified_at, response_json)
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![
+                "CCL7QSQ3FBG5FIUHNHZB37ZHDRTV4XN6AS5LQMSKZHA24D2JZQOZ4CHP",
+                "testnet",
+                hash,
+                "2026-06-01T10:00:00Z",
+                legacy_json.to_string()
+            ],
+        )
+        .unwrap();
+        drop(conn);
+
+        let by_contract = store
+            .by_contract_id(
+                "CCL7QSQ3FBG5FIUHNHZB37ZHDRTV4XN6AS5LQMSKZHA24D2JZQOZ4CHP",
+                "testnet",
+            )
+            .unwrap();
+        let entry = &by_contract.verifications[0].result;
+        assert_eq!(entry.status, VerificationStatus::Verified);
+        assert_eq!(entry.processed_at.as_deref(), Some("2026-06-01T10:00:00Z"));
+        assert_eq!(entry.verifier.id, "csv-stellar-test");
 
         let _ = std::fs::remove_file(path);
     }
