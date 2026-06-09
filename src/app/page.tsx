@@ -10,33 +10,62 @@ import VerificationForm from "../components/VerificationForm";
 import BadgesRow from "../components/BadgesRow";
 import ResultPanel from "../components/ResultPanel";
 import AccordionSection from "../components/AccordionSection";
-import { submitVerification } from "./actions/verify";
-import type { VerifyResponse } from "../types/index";
+import { lookupContract, submitVerification } from "./actions/verify";
+import type { VerificationEntry, VerifyFlowState } from "../types/index";
 
 export default function Home() {
-  const [verificationResult, setVerificationResult] = useState<VerifyResponse | null>(null);
+  const [verificationResult, setVerificationResult] = useState<VerificationEntry | null>(null);
   const [contractId, setContractId] = useState<string>("");
-  const [loading, setLoading] = useState(false);
-  const [showResult, setShowResult] = useState(false);
+  const [flowState, setFlowState] = useState<VerifyFlowState>("idle");
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [isCached, setIsCached] = useState(false);
 
   async function handleVerify(id: string) {
-    setLoading(true);
-    setShowResult(false);
     setVerificationResult(null);
     setFetchError(null);
     setContractId(id);
 
+    // Step 1: GET-first — check cache
+    setFlowState("loading-cache");
+    try {
+      const lookup = await lookupContract(id);
+      const first = lookup.verifications[0];
+      if (
+        first &&
+        (first.status === "verified" ||
+          first.status === "mismatch" ||
+          first.status === "failed")
+      ) {
+        setVerificationResult(first);
+        setIsCached(true);
+        setFlowState("cached-result");
+        return;
+      }
+    } catch {
+      // Cache miss or backend unreachable — fall through to POST
+    }
+
+    // Step 2: POST — trigger a rebuild
+    setFlowState("verifying");
     try {
       const result = await submitVerification(id);
-      setVerificationResult(result);
+      const entry = result.verifications[0] ?? null;
+      if (!entry) {
+        setFetchError("Verification finished but no result was returned.");
+        setFlowState("error");
+        return;
+      }
+      setVerificationResult(entry);
+      setIsCached(false);
+      setFlowState("cached-result");
     } catch (e) {
       setFetchError(e instanceof Error ? e.message : "Unexpected error");
-    } finally {
-      setShowResult(true);
-      setLoading(false);
+      setIsCached(false);
+      setFlowState("error");
     }
   }
+
+  const showResult = flowState === "cached-result" || flowState === "error";
 
   return (
     <div className="min-h-screen" style={{ background: "#0a0b0f" }}>
@@ -71,7 +100,7 @@ export default function Home() {
 
           {/* Verification form */}
           <div className="mb-6">
-            <VerificationForm onVerify={handleVerify} loading={loading} />
+            <VerificationForm onVerify={handleVerify} flowState={flowState} />
           </div>
 
           {/* Badges */}
@@ -86,6 +115,7 @@ export default function Home() {
               contractId={contractId}
               fetchError={fetchError}
               visible={showResult}
+              isCached={isCached}
             />
           </div>
 
@@ -104,10 +134,33 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-sm">
           <span>© 2026 CSV Stellar Verification. Powered by Soroban.</span>
           <nav className="flex items-center gap-5">
-            <a href="#" className="hover:text-slate-300 transition-colors" suppressHydrationWarning>Terms</a>
-            <a href="#" className="hover:text-slate-300 transition-colors" suppressHydrationWarning>Privacy</a>
-            <a href="#" className="hover:text-slate-300 transition-colors" suppressHydrationWarning>Security</a>
-            <a href="#" className="hover:text-slate-300 transition-colors" suppressHydrationWarning>GitHub</a>
+            <a
+              href="https://github.com/sebasberrios-dev/stellar-contract-verification/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-300 transition-colors"
+              suppressHydrationWarning
+            >
+              Issues
+            </a>
+            <a
+              href="https://github.com/sebasberrios-dev/stellar-contract-verification/security"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-300 transition-colors"
+              suppressHydrationWarning
+            >
+              Security
+            </a>
+            <a
+              href="https://github.com/sebasberrios-dev/stellar-contract-verification"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-slate-300 transition-colors"
+              suppressHydrationWarning
+            >
+              GitHub
+            </a>
           </nav>
         </div>
       </footer>

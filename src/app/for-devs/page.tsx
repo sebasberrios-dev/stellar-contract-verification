@@ -38,7 +38,7 @@ const STEPS = [
   {
     n: "03",
     title: "Deploy to testnet",
-    desc: "Publish your contract to the Stellar network of your choice.",
+    desc: "Publish your contract to Stellar testnet.",
     icon: Rocket,
     color: "#A855F7",
   },
@@ -53,12 +53,12 @@ const STEPS = [
 
 const FAQ_ITEMS = [
   {
-    q: "Does it work on mainnet and testnet?",
-    a: "Yes. CSV verifies on both. Select the network before entering the Contract ID.",
+    q: "Is mainnet supported?",
+    a: "Testnet only for now — mainnet is coming soon. Select testnet on the dashboard before entering a Contract ID.",
   },
   {
     q: "How long does verification take?",
-    a: "2–6 minutes. Clones the repo and compiles with the official Stellar CLI Docker image.",
+    a: "Already-verified contracts return instantly from cache. A first-time rebuild takes about 2–6 minutes while CSV clones the repo and compiles with the official Stellar CLI Docker image.",
   },
   {
     q: "Is my source code safe?",
@@ -192,9 +192,8 @@ export default function ForDevsPage() {
             Embed SEP-58 metadata so anyone can verify your source code matches what&apos;s deployed on Stellar.
           </p>
           <div className="flex items-center justify-center gap-6 mb-8">
-            <NetworkDot color="#22C55E" label="Mainnet" />
-            <NetworkDot color="#3B82F6" label="Testnet" />
-            <NetworkDot color="#F59E0B" label="Futurenet" />
+            <NetworkDot color="#22C55E" label="Testnet" />
+            <NetworkDot color="#4B5563" label="Mainnet — coming soon" />
           </div>
           <Link
             href="/for-devs/tutorial"
