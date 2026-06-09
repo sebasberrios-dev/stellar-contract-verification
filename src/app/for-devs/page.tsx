@@ -38,7 +38,7 @@ const STEPS = [
   {
     n: "03",
     title: "Deploy to testnet",
-    desc: "Publish your contract to the Stellar network of your choice.",
+    desc: "Publish your contract to Stellar testnet.",
     icon: Rocket,
     color: "#A855F7",
   },
@@ -54,11 +54,11 @@ const STEPS = [
 const FAQ_ITEMS = [
   {
     q: "Is mainnet supported?",
-    a: "Testnet only — mainnet support is coming soon. Make sure to select testnet before entering a Contract ID.",
+    a: "Testnet only for now — mainnet is coming soon. Select testnet on the dashboard before entering a Contract ID.",
   },
   {
     q: "How long does verification take?",
-    a: "2–6 minutes. Clones the repo and compiles with the official Stellar CLI Docker image.",
+    a: "Already-verified contracts return instantly from cache. A first-time rebuild takes about 2–6 minutes while CSV clones the repo and compiles with the official Stellar CLI Docker image.",
   },
   {
     q: "Is my source code safe?",
