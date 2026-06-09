@@ -30,7 +30,12 @@ export default function Home() {
     try {
       const lookup = await lookupContract(id);
       const first = lookup.verifications[0];
-      if (first && (first.status === "verified" || first.status === "mismatch")) {
+      if (
+        first &&
+        (first.status === "verified" ||
+          first.status === "mismatch" ||
+          first.status === "failed")
+      ) {
         setVerificationResult(first);
         setIsCached(true);
         setFlowState("cached-result");
@@ -44,7 +49,13 @@ export default function Home() {
     setFlowState("verifying");
     try {
       const result = await submitVerification(id);
-      setVerificationResult(result.verifications[0] ?? null);
+      const entry = result.verifications[0] ?? null;
+      if (!entry) {
+        setFetchError("Verification finished but no result was returned.");
+        setFlowState("error");
+        return;
+      }
+      setVerificationResult(entry);
       setIsCached(false);
       setFlowState("cached-result");
     } catch (e) {

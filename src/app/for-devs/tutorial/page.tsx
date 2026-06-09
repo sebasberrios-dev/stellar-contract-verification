@@ -29,7 +29,7 @@ const DEPLOY_CODE = `stellar contract deploy \\
   --network testnet \\
   --source YOUR_ACCOUNT_NAME`;
 
-const API_CURL_CODE = `curl -X POST https://stellar-contract-verification.fly.dev/verify \\
+const API_CURL_CODE = `curl -X POST https://stellar-contract-verification.vercel.app/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{"contract_id": "CDZIBWL67BFXPUKXEKYMIXH5AGLUBJVS4MW5EO6FHHNYX7IGRPBQVHFQ"}'`;
 
@@ -63,7 +63,13 @@ const TROUBLESHOOTING = [
   },
 ];
 
-function CodeBlock({ code, variant = "cyan" }: { code: string; variant?: "cyan" | "blue" }) {
+function CodeBlock({
+  code,
+  variant = "cyan",
+}: {
+  code: string;
+  variant?: "cyan" | "blue";
+}) {
   const [copied, setCopied] = useState(false);
   const isBlue = variant === "blue";
 
@@ -80,7 +86,9 @@ function CodeBlock({ code, variant = "cyan" }: { code: string; variant?: "cyan" 
   return (
     <div
       className={`relative rounded-xl p-4 font-mono text-sm bg-[#080e1a] border ${
-        isBlue ? "border-blue-500/20 text-[#93c5fd]" : "border-cyan-500/15 text-[#7dd3fc]"
+        isBlue
+          ? "border-blue-500/20 text-[#93c5fd]"
+          : "border-cyan-500/15 text-[#7dd3fc]"
       }`}
     >
       <button
@@ -160,7 +168,9 @@ function ContractTypeTabs() {
         ))}
       </div>
 
-      <CodeBlock code={tab === "simple" ? SIMPLE_BUILD_CODE : WORKSPACE_BUILD_CODE} />
+      <CodeBlock
+        code={tab === "simple" ? SIMPLE_BUILD_CODE : WORKSPACE_BUILD_CODE}
+      />
 
       <div className="flex gap-2.5 bg-amber-500/5 border border-amber-500/20 text-amber-400 text-sm rounded-lg px-4 py-3 mt-4">
         <span aria-hidden="true">⚠</span>
@@ -255,7 +265,9 @@ export default function TutorialPage() {
           >
             For Devs
           </Link>
-          <span className="text-slate-600" aria-hidden="true">→</span>
+          <span className="text-slate-600" aria-hidden="true">
+            →
+          </span>
           <span className="text-slate-400">Tutorial</span>
         </nav>
 
@@ -271,19 +283,26 @@ export default function TutorialPage() {
             </span>
           </h1>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
-            Follow these 4 steps to embed SEP-58 metadata and get your Soroban contract showing as
-            ✅ Contract Verified on CSV.
+            Follow these 4 steps to embed SEP-58 metadata and get your Soroban
+            contract showing as ✅ Contract Verified on CSV.
           </p>
         </section>
 
         {/* Prerequisites */}
         <section className="mb-14">
           <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-            <h2 className="text-white font-semibold text-lg mb-4">Prerequisites</h2>
+            <h2 className="text-white font-semibold text-lg mb-4">
+              Prerequisites
+            </h2>
             <ul className="space-y-2.5">
               {PREREQUISITES.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-slate-400 text-sm leading-relaxed">
-                  <span className="text-cyan-400 shrink-0" aria-hidden="true">◈</span>
+                <li
+                  key={item}
+                  className="flex items-start gap-2.5 text-slate-400 text-sm leading-relaxed"
+                >
+                  <span className="text-cyan-400 shrink-0" aria-hidden="true">
+                    ◈
+                  </span>
                   <span>{item}</span>
                 </li>
               ))}
@@ -293,10 +312,13 @@ export default function TutorialPage() {
 
         {/* Stepper */}
         <section className="mb-6">
-          <StepWrapper number={1} title="Commit your code and get the exact SHA">
+          <StepWrapper
+            number={1}
+            title="Commit your code and get the exact SHA"
+          >
             <p className="text-slate-400 text-sm leading-relaxed mb-4">
-              Use a pinned SHA — branches move, SHAs don&apos;t. The verifier rebuilds from this
-              exact commit.
+              Use a pinned SHA — branches move, SHAs don&apos;t. The verifier
+              rebuilds from this exact commit.
             </p>
             <CodeBlock code={STEP1_CODE} />
           </StepWrapper>
@@ -308,7 +330,8 @@ export default function TutorialPage() {
           <StepWrapper number={3} title="Deploy to Stellar Testnet">
             <CodeBlock code={DEPLOY_CODE} />
             <p className="text-slate-400 text-sm leading-relaxed mt-4">
-              The command prints your Contract ID — starts with C, 56 characters long. Copy it.
+              The command prints your Contract ID — starts with C, 56 characters
+              long. Copy it.
             </p>
           </StepWrapper>
 
@@ -319,17 +342,22 @@ export default function TutorialPage() {
 
         {/* GET-first API reference */}
         <section className="mb-14">
-          <h2 className="text-white font-semibold text-xl mb-2">Query the API directly</h2>
+          <h2 className="text-white font-semibold text-xl mb-2">
+            Query the API directly
+          </h2>
           <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-            The UI does this automatically, but you can also call the API from CI or scripts.
-            Always check the cache first — if the contract is already verified it returns instantly.
+            The UI does this automatically, but you can also call the API from
+            CI or scripts. Always check the cache first — if the contract is
+            already verified it returns instantly.
           </p>
 
           <div className="space-y-6">
             <div>
               <p className="text-slate-400 text-sm mb-3">
-                <span className="text-cyan-400 font-medium">Check if already verified</span>
-                {" "}(instant):
+                <span className="text-cyan-400 font-medium">
+                  Check if already verified
+                </span>{" "}
+                (instant):
               </p>
               <CodeBlock
                 code={`curl "https://stellar-contract-verification.vercel.app/api/v1/contracts/YOUR_CONTRACT_ID/verifications?network=testnet"`}
@@ -338,11 +366,13 @@ export default function TutorialPage() {
 
             <div>
               <p className="text-slate-400 text-sm mb-3">
-                <span className="text-cyan-400 font-medium">Trigger verification</span>
-                {" "}(2–6 min):
+                <span className="text-cyan-400 font-medium">
+                  Trigger verification
+                </span>{" "}
+                (2–6 min):
               </p>
               <CodeBlock
-                code={`curl -X POST https://stellar-contract-verification.fly.dev/verify \\
+                code={`curl -X POST https://stellar-contract-verification.vercel.app/api/verify \\
   -H "Content-Type: application/json" \\
   -d '{"contract_id": "YOUR_CONTRACT_ID"}'`}
                 variant="blue"
@@ -364,7 +394,9 @@ export default function TutorialPage() {
 
         {/* Troubleshooting */}
         <section className="mb-14">
-          <h2 className="text-white font-semibold text-xl mb-6">Troubleshooting</h2>
+          <h2 className="text-white font-semibold text-xl mb-6">
+            Troubleshooting
+          </h2>
           <TroubleshootingSection />
         </section>
 

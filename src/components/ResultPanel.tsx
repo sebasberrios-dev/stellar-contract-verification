@@ -174,15 +174,19 @@ export default function ResultPanel({
 
         <div className="flex flex-col gap-1">
           <span className="text-slate-500 text-xs uppercase tracking-wider">Verifier</span>
-          <a
-            href={data.verifier.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-slate-300 text-sm hover:text-white transition-colors"
-            suppressHydrationWarning
-          >
-            {data.verifier.name}
-          </a>
+          {data.verifier?.url ? (
+            <a
+              href={data.verifier.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-300 text-sm hover:text-white transition-colors"
+              suppressHydrationWarning
+            >
+              {data.verifier.name}
+            </a>
+          ) : (
+            <span className="text-slate-300 text-sm">{data.verifier?.name ?? "—"}</span>
+          )}
         </div>
 
         <div className="flex flex-col gap-1">
