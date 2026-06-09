@@ -50,9 +50,9 @@ function NavLogo({ className }: { className: string }) {
           <tspan fill="url(#logo-nav-cyan)">V</tspan>
         </text>
       </svg>
-      <span className="text-lg font-bold tracking-tight">
-        <span className="text-white">CSV</span>
-        <span className="text-zinc-400"> Stellar</span>
+
+      <span className="text-white text-[13px] font-medium tracking-wide whitespace-nowrap">
+        Contract Source Verify
       </span>
     </div>
   );

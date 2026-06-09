@@ -20,11 +20,22 @@ export async function GET(
     );
   }
 
-  const upstream = await fetch(
-    `${backendUrl}/v1/wasm/${encodeURIComponent(wasm_hash)}/verifications?network=${encodeURIComponent(network)}`,
-    { cache: "no-store" },
-  );
+  try {
+    const upstream = await fetch(
+      `${backendUrl}/v1/wasm/${encodeURIComponent(wasm_hash)}/verifications?network=${encodeURIComponent(network)}`,
+      { cache: "no-store" },
+    );
 
-  const data = await upstream.json();
-  return NextResponse.json(data, { status: upstream.status });
+    const data = await upstream.json().catch(() => ({
+      error: `Invalid JSON from backend (HTTP ${upstream.status})`,
+    }));
+
+    return NextResponse.json(data, { status: upstream.status });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Lookup request failed";
+    return NextResponse.json(
+      { error: message, code: "LOOKUP_FAILED" },
+      { status: 502 },
+    );
+  }
 }

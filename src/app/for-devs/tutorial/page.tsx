@@ -31,7 +31,7 @@ const DEPLOY_CODE = `stellar contract deploy \\
 
 const API_CURL_CODE = `curl -X POST https://stellar-contract-verification.vercel.app/api/verify \\
   -H "Content-Type: application/json" \\
-  -d '{"contract_id": "CDZIBWL67BFXPUKXEKYMIXH5AGLUBJVS4MW5EO6FHHNYX7IGRPBQVHFQ"}'`;
+  -d '{"contract_id": "YOUR_CONTRACT_ID"}'`;
 
 const PREREQUISITES = [
   "stellar-cli installed (v26+)",

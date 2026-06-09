@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { lookupByContractId } from "../../../../../lib/api";
 
 interface ErrorResponse {
   error: string;
@@ -12,19 +13,21 @@ export async function GET(
   const { contract_id } = await context.params;
   const network = req.nextUrl.searchParams.get("network") ?? "testnet";
 
-  const backendUrl = process.env.BACKEND_URL;
-  if (!backendUrl) {
+  if (!process.env.BACKEND_URL) {
     return NextResponse.json(
       { error: "Backend not configured", code: "BACKEND_NOT_CONFIGURED" },
       { status: 500 },
     );
   }
 
-  const upstream = await fetch(
-    `${backendUrl}/v1/contracts/${encodeURIComponent(contract_id)}/verifications?network=${encodeURIComponent(network)}`,
-    { cache: "no-store" },
-  );
-
-  const data = await upstream.json();
-  return NextResponse.json(data, { status: upstream.status });
+  try {
+    const data = await lookupByContractId(contract_id, network);
+    return NextResponse.json(data);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Lookup request failed";
+    return NextResponse.json(
+      { error: message, code: "LOOKUP_FAILED" },
+      { status: 502 },
+    );
+  }
 }

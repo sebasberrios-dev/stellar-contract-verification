@@ -13,18 +13,20 @@ interface ResultPanelProps {
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZoneName: "short",
-    });
-  } catch {
+
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
     return iso;
   }
+
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
 }
 
 function truncateId(id: string, start = 8, end = 6): string {
@@ -103,6 +105,7 @@ export default function ResultPanel({
   const cfg = STATUS_CONFIG[data.status] ?? STATUS_CONFIG.unverified;
   const buildImage = data.bldimg ?? data.build_image;
   const levelLabel = LEVEL_LABELS[data.verification_level] ?? "Unknown";
+  const buildOpts = data.bldopt ?? [];
   const showHashRow = data.status !== "unverified";
 
   return (
@@ -196,13 +199,13 @@ export default function ResultPanel({
       </div>
 
       {/* Build flags — only when non-empty */}
-      {data.bldopt.length > 0 && (
+      {buildOpts.length > 0 && (
         <div className="mb-4">
           <span className="text-slate-500 text-xs uppercase tracking-wider block mb-2">
             Build Flags
           </span>
           <div className="flex flex-wrap gap-2">
-            {data.bldopt.map((flag) => (
+            {buildOpts.map((flag) => (
               <code
                 key={flag}
                 className="bg-[#0d1117] border border-white/10 text-cyan-300 font-mono text-xs px-2 py-1 rounded-md"

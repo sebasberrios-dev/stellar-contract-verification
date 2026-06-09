@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { submitVerification } from "../../../lib/api";
 import type { ContractLookupResponse } from "../../../types/index";
 
 interface ErrorResponse {
@@ -7,7 +8,7 @@ interface ErrorResponse {
 }
 
 export async function POST(
-  req: NextRequest
+  req: NextRequest,
 ): Promise<NextResponse<ContractLookupResponse | ErrorResponse>> {
   let body: unknown;
 
@@ -16,7 +17,7 @@ export async function POST(
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body", code: "INVALID_BODY" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -25,25 +26,25 @@ export async function POST(
   if (!contract_id || typeof contract_id !== "string") {
     return NextResponse.json(
       { error: "contract_id is required", code: "MISSING_CONTRACT_ID" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const backendUrl = process.env.BACKEND_URL;
-  if (!backendUrl) {
+  if (!process.env.BACKEND_URL) {
     return NextResponse.json(
       { error: "Backend not configured", code: "BACKEND_NOT_CONFIGURED" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
-  const upstream = await fetch(`${backendUrl}/verify`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ contract_id }),
-  });
-
-  const data = await upstream.json();
-
-  return NextResponse.json(data, { status: upstream.status });
+  try {
+    const data = await submitVerification(contract_id);
+    return NextResponse.json(data);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Verification request failed";
+    return NextResponse.json(
+      { error: message, code: "VERIFY_FAILED" },
+      { status: 502 },
+    );
+  }
 }
