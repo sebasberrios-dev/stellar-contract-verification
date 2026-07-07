@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import ThemePreview from "../components/ThemePreview";
 import "./globals.css";
 
 const inter = Inter({
@@ -44,6 +45,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
+        {/* TEMP: background palette switcher for design review — remove before merge */}
+        <ThemePreview />
       </body>
     </html>
   );

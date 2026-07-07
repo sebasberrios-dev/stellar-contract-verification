@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../components/Navbar";
+import AuroraBackground from "../../components/AuroraBackground";
 import VerificationForm from "../../components/VerificationForm";
 import ResultPanel from "../../components/ResultPanel";
 import { useVerifyFlow } from "../../hooks/useVerifyFlow";
@@ -32,8 +33,9 @@ function VerifyContent() {
   }, [idFromUrl, handleVerify]);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background relative">
       <Navbar />
+      <AuroraBackground />
 
       <main className="relative z-10 max-w-2xl mx-auto px-6 pt-28 pb-12">
         <Link
@@ -45,7 +47,7 @@ function VerifyContent() {
         </Link>
 
         <div className="flex flex-col items-center text-center mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight mb-3">
             Verify a Contract
           </h1>
           <p className="text-muted-foreground text-base">
