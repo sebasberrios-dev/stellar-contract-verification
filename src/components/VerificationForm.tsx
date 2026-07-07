@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Search } from "lucide-react";
+import Input from "./ui/Input";
+import Button from "./ui/Button";
 import type { VerifyFlowState } from "../types/index";
 
 interface VerificationFormProps {
@@ -51,25 +53,13 @@ export default function VerificationForm({
   const isDisabled = contractId.trim() === "" || isLoading;
 
   function buttonContent() {
-    if (flowState === "loading-cache") {
-      return (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Checking cache...</span>
-        </>
-      );
-    }
+    if (flowState === "loading-cache") return <span>Checking cache...</span>;
     if (flowState === "verifying") {
-      return (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Rebuilding from source... This may take 2–6 minutes</span>
-        </>
-      );
+      return <span>Rebuilding from source... This may take 2–6 minutes</span>;
     }
     return (
       <>
-        <Search className="w-4 h-4" />
+        <Search className="w-4 h-4" aria-hidden="true" />
         <span>Verify Contract</span>
       </>
     );
@@ -77,34 +67,29 @@ export default function VerificationForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate className="w-full">
-      <div className="flex flex-col gap-2">
-        <div className="relative">
-          <input
-            type="text"
-            value={contractId}
-            onChange={handleChange}
-            placeholder="Contract ID (e.g. CA...)"
-            maxLength={64}
-            disabled={isLoading}
-            className="w-full bg-[#111318] border border-[#1e2130] text-white rounded-lg px-4 py-3 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-[#3b82f6] focus:shadow-[0_0_12px_rgba(59,130,246,0.2)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            aria-describedby={error && touched ? "contract-error" : undefined}
-            aria-invalid={error && touched ? true : undefined}
-          />
-        </div>
+      <div className="flex flex-col gap-3">
+        <Input
+          label="Contract ID"
+          type="text"
+          value={contractId}
+          onChange={handleChange}
+          placeholder="C… (56 characters)"
+          maxLength={64}
+          disabled={isLoading}
+          error={touched ? error : null}
+          spellCheck={false}
+        />
 
-        {error && touched && (
-          <p id="contract-error" role="alert" className="text-red-400 text-xs px-1">
-            {error}
-          </p>
-        )}
-
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          size="md"
           disabled={isDisabled}
-          className="w-full flex items-center justify-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-semibold py-3 px-6 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+          loading={isLoading}
+          className="w-full"
         >
           {buttonContent()}
-        </button>
+        </Button>
       </div>
     </form>
   );

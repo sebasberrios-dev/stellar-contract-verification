@@ -34,10 +34,10 @@ export default function WalletButton() {
       <button
         type="button"
         disabled
-        className="bg-white/5 border border-white/10 text-slate-300 text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="bg-card border border-border text-foreground/80 text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg
-          className="animate-spin w-4 h-4 text-slate-400"
+          className="animate-spin w-4 h-4 text-muted-foreground"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
@@ -72,9 +72,9 @@ export default function WalletButton() {
           aria-label={`Wallet connected: ${publicKey ?? ""}. Open wallet menu`}
           aria-expanded={dropdownOpen}
           aria-haspopup="menu"
-          className="bg-green-500/10 border border-green-500/30 text-green-400 text-sm px-4 py-2 rounded-full flex items-center gap-2"
+          className="bg-success/10 border border-success/30 text-success text-sm px-4 py-2 rounded-full flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
         >
-          <span className="w-2 h-2 rounded-full bg-green-400 inline-block" />
+          <span className="w-2 h-2 rounded-full bg-success inline-block" />
           {truncateAddress(publicKey)}
           <svg
             className="w-3 h-3 opacity-70"
@@ -96,17 +96,17 @@ export default function WalletButton() {
           <div
             role="menu"
             aria-label="Wallet options"
-            className="absolute right-0 top-full mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl p-2 min-w-48 z-50"
+            className="absolute right-0 top-full mt-2 bg-card border border-border rounded-xl p-2 min-w-48 z-30"
           >
             <div className="px-3 py-2">
-              <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">
+              <p className="text-muted-foreground/80 text-xs font-medium uppercase tracking-wider">
                 {network ?? "UNKNOWN"}
               </p>
-              <p className="text-slate-300 text-xs mt-1 font-mono">
+              <p className="text-foreground/80 text-xs mt-1 font-mono">
                 {truncateAddress(publicKey)}
               </p>
             </div>
-            <div className="border-t border-white/10 my-1" />
+            <div className="border-t border-border my-1" />
             <button
               role="menuitem"
               type="button"
@@ -114,7 +114,7 @@ export default function WalletButton() {
                 disconnect();
                 setDropdownOpen(false);
               }}
-              className="w-full text-left px-3 py-2 text-red-400 text-sm rounded-lg hover:bg-red-500/10 transition-colors"
+              className="w-full text-left px-3 py-2 text-destructive text-sm rounded-lg hover:bg-destructive/10 transition-colors"
             >
               Disconnect
             </button>
@@ -130,11 +130,11 @@ export default function WalletButton() {
       <button
         type="button"
         onClick={() => void connect()}
-        className="bg-white/5 border border-white/10 text-slate-300 text-sm font-medium px-4 py-2 rounded-lg hover:bg-white/10 hover:border-[#00BFFF]/40 transition-colors"
+        className="bg-card border border-border text-foreground/80 text-sm font-medium px-4 py-2 rounded-lg hover:bg-card-hover hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
       >
         Connect Wallet
       </button>
-      {error && <p role="alert" className="text-red-400 text-xs">{error}</p>}
+      {error && <p role="alert" className="text-destructive text-xs">{error}</p>}
     </div>
   );
 }

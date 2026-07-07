@@ -17,7 +17,7 @@ interface AccordionProps {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="inline-block bg-gray-800 text-[#00BFFF] font-mono text-xs px-1.5 py-0.5 rounded">
+    <code className="inline-block bg-code text-primary font-mono text-xs px-1.5 py-0.5 rounded">
       {children}
     </code>
   );
@@ -69,14 +69,14 @@ const ITEMS: AccordionItem[] = [
     icon: <IconInfo />,
     content: (
       <div className="space-y-4">
-        <p className="text-slate-400 text-sm leading-relaxed">
+        <p className="text-muted-foreground text-sm leading-relaxed">
           SEP-58 is a Stellar Ecosystem Proposal that defines a standard for embedding
           source-code metadata directly inside a compiled Soroban WASM binary. This
           allows anyone to independently verify that a deployed contract was built from
           a specific, auditable source repository.
         </p>
         <div>
-          <p className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-3">
+          <p className="text-foreground/80 text-xs font-semibold uppercase tracking-wider mb-3">
             Metadata fields
           </p>
           <ul className="space-y-2">
@@ -88,7 +88,7 @@ const ITEMS: AccordionItem[] = [
             ].map(({ field, desc }) => (
               <li key={field} className="flex items-start gap-3">
                 <Code>{field}</Code>
-                <span className="text-slate-400 text-sm">{desc}</span>
+                <span className="text-muted-foreground text-sm">{desc}</span>
               </li>
             ))}
           </ul>
@@ -111,8 +111,8 @@ const ITEMS: AccordionItem[] = [
           { n: "06", text: <>Compare the resulting WASM hash with the on-chain bytecode — a match means cryptographic verification.</> },
         ].map(({ n, text }) => (
           <li key={n} className="flex items-start gap-4">
-            <span className="font-mono text-xs text-slate-600 font-bold pt-0.5 w-5 shrink-0">{n}</span>
-            <span className="text-slate-400 text-sm leading-relaxed">{text}</span>
+            <span className="font-mono text-xs text-muted-foreground/70 font-bold pt-0.5 w-5 shrink-0">{n}</span>
+            <span className="text-muted-foreground text-sm leading-relaxed">{text}</span>
           </li>
         ))}
       </ol>
@@ -124,7 +124,7 @@ const ITEMS: AccordionItem[] = [
     icon: <IconShield />,
     content: (
       <div className="space-y-4">
-        <p className="text-slate-400 text-sm leading-relaxed">
+        <p className="text-muted-foreground text-sm leading-relaxed">
           Smart contracts control real assets. Without source verification, users must
           blindly trust that the bytecode on-chain matches the audited source code —
           a gap that has led to multi-million dollar exploits in other ecosystems.
@@ -137,9 +137,9 @@ const ITEMS: AccordionItem[] = [
             { head: "Ecosystem confidence", body: "Verified contracts signal professionalism and attract more users and integrators." },
           ].map(({ head, body }) => (
             <li key={head} className="flex items-start gap-3">
-              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#00BFFF] shrink-0" />
-              <span className="text-slate-400 text-sm leading-relaxed">
-                <span className="text-slate-200 font-medium">{head} — </span>{body}
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+              <span className="text-muted-foreground text-sm leading-relaxed">
+                <span className="text-foreground/90 font-medium">{head} — </span>{body}
               </span>
             </li>
           ))}
@@ -151,19 +151,19 @@ const ITEMS: AccordionItem[] = [
 
 function AccordionRow({ item, isOpen, onToggle }: AccordionProps) {
   return (
-    <div className="border border-[#1e2130] rounded-xl overflow-hidden">
+    <div className="border border-border rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between px-5 py-4 bg-[#111318] hover:bg-[#161920] transition-colors text-left"
+        className="w-full flex items-center justify-between px-5 py-4 bg-card hover:bg-card-hover transition-colors text-left"
       >
-        <span className="flex items-center gap-3 text-slate-300 font-medium text-sm">
-          <span className="text-[#3b82f6]">{item.icon}</span>
+        <span className="flex items-center gap-3 text-foreground/80 font-medium text-sm">
+          <span className="text-secondary">{item.icon}</span>
           {item.title}
         </span>
         <span
-          className="text-slate-500 transition-transform duration-300"
+          className="text-muted-foreground/80 transition-transform duration-300"
           style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
         >
           <IconChevron />
@@ -178,7 +178,7 @@ function AccordionRow({ item, isOpen, onToggle }: AccordionProps) {
           overflow: "hidden",
         }}
       >
-        <div className="px-5 pb-5 pt-4 bg-[#0a0b0f] border-t border-[#1e2130]">
+        <div className="px-5 pb-5 pt-4 bg-background border-t border-border">
           {item.content}
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function AccordionSection() {
 
   return (
     <section className="w-full space-y-3">
-      <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-4">
+      <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-widest mb-4">
         Learn more
       </h2>
       {ITEMS.map((item) => (

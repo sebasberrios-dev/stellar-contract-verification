@@ -17,14 +17,13 @@ export default function BadgesRow() {
       {BADGES.map((badge) => (
         <div
           key={badge.label}
-          className="flex items-center gap-2 bg-[#111318] border border-[#1e2130] rounded-full px-4 py-2 hover:border-[#3b82f6]/30 transition-colors"
+          className="flex items-center gap-2 bg-card border border-border rounded-full px-4 py-2 hover:border-primary/40 transition-colors"
         >
           <CheckCircle2
-            className="w-4 h-4 flex-shrink-0"
-            color="#22c55e"
+            className="w-4 h-4 flex-shrink-0 text-success"
             aria-hidden="true"
           />
-          <span className="text-sm text-slate-300">{badge.label}</span>
+          <span className="text-sm text-foreground/80">{badge.label}</span>
         </div>
       ))}
     </div>

@@ -23,7 +23,7 @@ export default function Home() {
   } = useVerifyFlow();
 
   return (
-    <div className="min-h-screen" style={{ background: "#0a0b0f" }}>
+    <div className="min-h-screen bg-background">
       <Navbar />
 
       <main className="relative">
@@ -33,7 +33,7 @@ export default function Home() {
 
         {/* CSV logo watermark — sits above the starry background, below the content */}
         <div
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] w-[600px] h-[600px] opacity-[0.06] pointer-events-none"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] w-[min(600px,90vw)] h-[min(600px,90vw)] opacity-[0.06] pointer-events-none"
           aria-hidden="true"
         >
           <Logo variant="full" className="w-full h-full" />
@@ -48,7 +48,7 @@ export default function Home() {
             <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-3">
               Contract Source Verify
             </h1>
-            <p className="text-slate-400 text-lg tracking-wide">
+            <p className="text-muted-foreground text-lg tracking-wide">
               Secure&nbsp;•&nbsp;Transparent&nbsp;•&nbsp;Verified
             </p>
           </div>
@@ -78,22 +78,22 @@ export default function Home() {
           <AccordionSection />
 
           {/* Mini footer inside content col */}
-          <p className="text-center text-slate-600 text-xs mt-12 tracking-widest uppercase">
+          <p className="text-center text-muted-foreground/70 text-xs mt-12 tracking-widest uppercase">
             Built on Stellar
           </p>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 px-6 py-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-sm">
+      <footer className="relative z-10 border-t border-border px-6 py-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-muted-foreground/80 text-sm">
           <span>© 2026 CSV Stellar Verification. Powered by Soroban.</span>
           <nav className="flex items-center gap-5">
             <a
               href="https://github.com/sebasberrios-dev/stellar-contract-verification/issues"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-300 transition-colors"
+              className="hover:text-foreground/80 transition-colors"
               suppressHydrationWarning
             >
               Issues
@@ -102,7 +102,7 @@ export default function Home() {
               href="https://github.com/sebasberrios-dev/stellar-contract-verification/security"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-300 transition-colors"
+              className="hover:text-foreground/80 transition-colors"
               suppressHydrationWarning
             >
               Security
@@ -111,7 +111,7 @@ export default function Home() {
               href="https://github.com/sebasberrios-dev/stellar-contract-verification"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-300 transition-colors"
+              className="hover:text-foreground/80 transition-colors"
               suppressHydrationWarning
             >
               GitHub

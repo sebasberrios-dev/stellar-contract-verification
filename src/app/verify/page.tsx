@@ -38,7 +38,7 @@ function VerifyContent() {
       <main className="relative z-10 max-w-2xl mx-auto px-6 py-12">
         <Link
           href="/"
-          className="text-sm text-slate-400 hover:text-white inline-flex items-center gap-2 transition-colors mb-8"
+          className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors mb-8"
           suppressHydrationWarning
         >
           ← Dashboard
@@ -48,7 +48,7 @@ function VerifyContent() {
           <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-3">
             Verify a Contract
           </h1>
-          <p className="text-slate-400 text-base">
+          <p className="text-muted-foreground text-base">
             Paste a Contract ID — cached results return instantly.
           </p>
         </div>

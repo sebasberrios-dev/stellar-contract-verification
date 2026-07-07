@@ -29,12 +29,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`h-full antialiased ${GeistSans.variable} ${GeistMono.variable} ${inter.variable} ${jetbrainsMono.variable}`}
-      style={{ background: "#0a0b0f" }}
+      className={`h-full antialiased bg-background ${GeistSans.variable} ${GeistMono.variable} ${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body
-        className="min-h-full flex flex-col"
-        style={{ background: "#0a0b0f", color: "#ffffff", fontFamily: "var(--font-inter, ui-sans-serif, system-ui, sans-serif)" }}
+        className="min-h-full flex flex-col bg-background text-foreground"
+        style={{ fontFamily: "var(--font-inter, ui-sans-serif, system-ui, sans-serif)" }}
         suppressHydrationWarning
       >
         {children}

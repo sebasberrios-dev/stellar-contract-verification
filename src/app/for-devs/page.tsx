@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GitCommit, Terminal, Rocket, CheckCircle2, Copy, Check } from "lucide-react";
+import { GitCommit, Terminal, Rocket, CheckCircle2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
+import CodeBlock from "../../components/ui/CodeBlock";
 
 const YAML_TEMPLATE = `name: Build & Verify Soroban Contract
 on:
@@ -26,28 +27,28 @@ const STEPS = [
     title: "Commit your code",
     desc: "Push your contract source to a public GitHub repository.",
     icon: GitCommit,
-    color: "#00BFFF",
+    iconClass: "text-primary",
   },
   {
     n: "02",
     title: "Build with --meta flags",
     desc: "Embed source_repo and source_rev directly into the WASM binary.",
     icon: Terminal,
-    color: "#3B82F6",
+    iconClass: "text-secondary",
   },
   {
     n: "03",
     title: "Deploy to testnet",
     desc: "Publish your contract to Stellar testnet.",
     icon: Rocket,
-    color: "#A855F7",
+    iconClass: "text-accent",
   },
   {
     n: "04",
     title: "Verify on CSV",
     desc: "Submit the Contract ID and let CSV reproduce the build.",
     icon: CheckCircle2,
-    color: "#22C55E",
+    iconClass: "text-success",
   },
 ];
 
@@ -82,45 +83,12 @@ const FAQ_ITEMS = [
   },
 ];
 
-function NetworkDot({ color, label }: { color: string; label: string }) {
+function NetworkDot({ dotClass, label }: { dotClass: string; label: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs text-slate-400">
-      <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
       {label}
     </span>
-  );
-}
-
-function CodeBlock() {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(YAML_TEMPLATE);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  }
-
-  return (
-    <div className="bg-[#080e1a] border border-cyan-500/15 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-cyan-500/10">
-        <span className="text-slate-500 text-xs font-mono">.github/workflows/verify.yml</span>
-        <button
-          type="button"
-          onClick={() => void handleCopy()}
-          className="flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs rounded-md px-2.5 py-1 hover:bg-cyan-500/20 transition-colors"
-        >
-          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-          {copied ? "Copied!" : "Copy template"}
-        </button>
-      </div>
-      <pre className="p-4 overflow-x-auto text-xs leading-relaxed font-mono text-slate-300">
-        <code>{YAML_TEMPLATE}</code>
-      </pre>
-    </div>
   );
 }
 
@@ -134,28 +102,36 @@ function FaqAccordion() {
         return (
           <div
             key={item.q}
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden"
+            className="bg-card border border-border rounded-2xl overflow-hidden"
           >
             <button
               type="button"
               onClick={() => setOpenIndex(isOpen ? null : i)}
               aria-expanded={isOpen}
-              className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-white/[0.03] transition-colors"
+              className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-card-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset"
             >
-              <span className="text-slate-200 text-sm font-medium">{item.q}</span>
+              <span className="text-foreground/90 text-sm font-medium">{item.q}</span>
               <span
-                className="text-cyan-400 text-xl leading-none shrink-0 transition-transform duration-300 ease-in-out"
+                className="text-primary text-xl leading-none shrink-0 transition-transform duration-300 ease-in-out motion-reduce:transition-none"
                 style={{ transform: isOpen ? "rotate(45deg)" : "rotate(0deg)" }}
                 aria-hidden="true"
               >
                 +
               </span>
             </button>
+            {/* grid-rows animation — never clips long answers */}
             <div
-              className="transition-all duration-300 ease-in-out overflow-hidden"
-              style={{ maxHeight: isOpen ? "240px" : "0px", opacity: isOpen ? 1 : 0 }}
+              className="grid transition-[grid-template-rows,opacity] duration-300 ease-in-out motion-reduce:transition-none"
+              style={{
+                gridTemplateRows: isOpen ? "1fr" : "0fr",
+                opacity: isOpen ? 1 : 0,
+              }}
             >
-              <p className="px-5 pb-4 text-slate-400 text-sm leading-relaxed">{item.a}</p>
+              <div className="overflow-hidden">
+                <p className="px-5 pb-4 text-muted-foreground text-sm leading-relaxed">
+                  {item.a}
+                </p>
+              </div>
             </div>
           </div>
         );
@@ -166,38 +142,38 @@ function FaqAccordion() {
 
 export default function ForDevsPage() {
   return (
-    <div className="min-h-screen" style={{ background: "#000000" }}>
+    <div className="min-h-screen bg-background">
       <Navbar />
       <div className="max-w-4xl mx-auto px-6">
         <Link
           href="/"
-          className="text-sm text-gray-400 hover:text-white flex items-center gap-2 transition-colors pt-6"
+          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors pt-6"
           suppressHydrationWarning
         >
           ← Dashboard
         </Link>
 
         {/* Hero */}
-        <section className="text-center py-16">
-          <div className="inline-flex items-center gap-2 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-medium rounded-full px-3 py-1 mb-6">
+        <section className="text-center py-16 md:py-24">
+          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-medium rounded-full px-3 py-1 mb-6">
             ⚡ 5 min setup
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-4">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground tracking-tight mb-4">
             Make Your Contract{" "}
-            <span className="bg-gradient-to-r from-[#00BFFF] to-[#3B82F6] bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               Verifiable
             </span>
           </h1>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
             Embed SEP-58 metadata so anyone can verify your source code matches what&apos;s deployed on Stellar.
           </p>
           <div className="flex items-center justify-center gap-6 mb-8">
-            <NetworkDot color="#22C55E" label="Testnet" />
-            <NetworkDot color="#4B5563" label="Mainnet — coming soon" />
+            <NetworkDot dotClass="bg-success" label="Testnet" />
+            <NetworkDot dotClass="bg-muted-foreground/40" label="Mainnet — coming soon" />
           </div>
           <Link
             href="/for-devs/tutorial"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#00BFFF] to-[#3B82F6] text-white font-semibold text-sm rounded-lg px-6 py-3 transition-all hover:shadow-[0_0_24px_rgba(59,130,246,0.4)]"
+            className="inline-flex items-center gap-2 h-11 bg-gradient-to-r from-primary to-secondary text-white font-semibold text-sm rounded-lg px-6 transition-all hover:shadow-glow-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             suppressHydrationWarning
           >
             View full tutorial →
@@ -206,12 +182,12 @@ export default function ForDevsPage() {
 
         {/* What is SEP-58? */}
         <section className="mb-16">
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
-            <span className="text-cyan-400 text-2xl" aria-hidden="true">◈</span>
-            <h2 className="text-white font-semibold text-xl mt-3 mb-2">
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <span className="text-primary text-2xl" aria-hidden="true">◈</span>
+            <h2 className="text-foreground font-semibold text-xl mt-3 mb-2">
               Build metadata embedded in your WASM
             </h2>
-            <p className="text-slate-400 text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               SEP-58 links your deployed contract to its exact source code on GitHub — source repo,
               commit hash, and the Docker image used to build it. CSV reads this metadata to
               cryptographically verify your contract.
@@ -221,28 +197,28 @@ export default function ForDevsPage() {
 
         {/* Quick overview — 4 steps */}
         <section className="mb-16">
-          <h2 className="text-white font-semibold text-xl mb-6">Quick overview — 4 steps</h2>
+          <h2 className="text-foreground font-semibold text-xl mb-6">Quick overview — 4 steps</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             {STEPS.map((step) => {
               const Icon = step.icon;
               return (
                 <div
                   key={step.n}
-                  className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5"
+                  className="bg-card border border-border rounded-2xl p-5 hover:border-primary/40 transition-colors duration-300"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="font-mono text-xs text-slate-600 font-bold">{step.n}</span>
-                    <Icon className="w-4 h-4" style={{ color: step.color }} aria-hidden="true" />
+                    <span className="font-mono text-xs text-muted-foreground/70 font-bold">{step.n}</span>
+                    <Icon className={`w-4 h-4 ${step.iconClass}`} aria-hidden="true" />
                   </div>
-                  <h3 className="text-slate-200 font-medium text-sm mb-1">{step.title}</h3>
-                  <p className="text-slate-500 text-xs leading-relaxed">{step.desc}</p>
+                  <h3 className="text-foreground/90 font-medium text-sm mb-1">{step.title}</h3>
+                  <p className="text-muted-foreground/80 text-xs leading-relaxed">{step.desc}</p>
                 </div>
               );
             })}
           </div>
           <Link
             href="/for-devs/tutorial"
-            className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-[#00BFFF] to-[#3B82F6] text-white font-semibold py-3 px-6 rounded-lg transition-all hover:shadow-[0_0_24px_rgba(59,130,246,0.4)]"
+            className="flex items-center justify-center gap-2 w-full h-11 bg-gradient-to-r from-primary to-secondary text-white font-semibold text-sm rounded-lg px-6 transition-all hover:shadow-glow-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             suppressHydrationWarning
           >
             Follow the full tutorial →
@@ -251,33 +227,34 @@ export default function ForDevsPage() {
 
         {/* GitHub Actions */}
         <section className="mb-16">
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
-            <h2 className="text-white font-semibold text-lg mb-1">Automate SEP-58 in your CI/CD</h2>
-            <p className="text-slate-500 text-sm mb-5">
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <h2 className="text-foreground font-semibold text-lg mb-1">Automate SEP-58 in your CI/CD</h2>
+            <p className="text-muted-foreground/80 text-sm mb-5">
               Drop this workflow into{" "}
-              <code className="bg-gray-800 text-cyan-400 font-mono text-xs px-1.5 py-0.5 rounded">
+              <code className="bg-code text-primary font-mono text-xs px-1.5 py-0.5 rounded">
                 .github/workflows/
               </code>{" "}
               to embed metadata on every push to main.
             </p>
-            <CodeBlock />
+            <CodeBlock
+              code={YAML_TEMPLATE}
+              filename=".github/workflows/verify.yml"
+              copyLabel="Copy template"
+            />
           </div>
         </section>
 
         {/* FAQ */}
         <section className="mb-16">
-          <h2 className="text-white font-semibold text-xl mb-6">FAQ</h2>
+          <h2 className="text-foreground font-semibold text-xl mb-6">FAQ</h2>
           <FaqAccordion />
         </section>
 
         {/* CTA final */}
         <section className="mb-16">
-          <div
-            className="rounded-2xl border border-white/10 p-8 text-center"
-            style={{ background: "linear-gradient(135deg, rgba(0,191,255,0.08), rgba(59,130,246,0.08))" }}
-          >
-            <h2 className="text-white font-semibold text-xl mb-2">Need help implementing SEP-58?</h2>
-            <p className="text-slate-400 text-sm mb-6 max-w-md mx-auto leading-relaxed">
+          <div className="rounded-2xl border border-border p-8 text-center bg-gradient-to-br from-primary/10 to-secondary/10">
+            <h2 className="text-foreground font-semibold text-xl mb-2">Need help implementing SEP-58?</h2>
+            <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto leading-relaxed">
               We help Soroban developers make their contracts verifiable. Reach out directly.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
@@ -285,7 +262,7 @@ export default function ForDevsPage() {
                 href="https://x.com/MetaStellaX"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white text-sm font-medium rounded-xl px-6 py-3 hover:bg-white/20 transition-colors"
+                className="inline-flex items-center gap-2 bg-card border border-border text-foreground text-sm font-medium rounded-xl px-6 py-3 hover:bg-card-hover hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 suppressHydrationWarning
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
@@ -297,7 +274,7 @@ export default function ForDevsPage() {
                 href="https://t.me/+LkioKlyV7BhlN2Yx"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-[#229ED9]/10 border border-[#229ED9]/30 text-[#229ED9] text-sm font-medium rounded-xl px-6 py-3 hover:bg-[#229ED9]/20 transition-colors"
+                className="inline-flex items-center gap-2 bg-secondary/10 border border-secondary/30 text-secondary text-sm font-medium rounded-xl px-6 py-3 hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 suppressHydrationWarning
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
