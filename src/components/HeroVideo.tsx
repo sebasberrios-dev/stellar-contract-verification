@@ -20,8 +20,10 @@ export default function HeroVideo({ className = "" }: { className?: string }) {
     }
   }, []);
 
+  // Long, gradual fade — starts well inside the frame so no edge or corner
+  // of the rectangle ever reads as a boundary.
   const mask =
-    "radial-gradient(ellipse 72% 62% at 50% 50%, black 48%, transparent 80%)";
+    "radial-gradient(ellipse 62% 54% at 50% 50%, black 30%, transparent 72%)";
 
   return (
     <video
@@ -33,7 +35,9 @@ export default function HeroVideo({ className = "" }: { className?: string }) {
       loop
       playsInline
       aria-hidden="true"
-      className={`select-none pointer-events-none ${className}`}
+      // mix-blend-screen sinks the video's dark space background into the
+      // page background, so only the bright glow reads — no floating rectangle
+      className={`select-none pointer-events-none mix-blend-screen ${className}`}
       style={{ maskImage: mask, WebkitMaskImage: mask }}
     />
   );
