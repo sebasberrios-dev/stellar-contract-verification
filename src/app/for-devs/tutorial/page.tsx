@@ -200,7 +200,7 @@ export default function TutorialPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-6 pt-28 pb-12">
         <Link
           href="/"
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors mb-6"

@@ -2,7 +2,11 @@
 
 import { useWallet } from "../hooks/useWallet";
 
-export default function NetworkBadge() {
+export default function NetworkBadge({
+  className = "hidden sm:flex",
+}: {
+  className?: string;
+}) {
   const { isConnected, network } = useWallet();
 
   const appNetwork =
@@ -15,7 +19,7 @@ export default function NetworkBadge() {
 
   if (!isConnected || network === null) {
     return (
-      <div className="hidden sm:flex items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5">
+      <div className={`${className} items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5`}>
         <span className="w-2 h-2 rounded-full bg-primary inline-block" />
         <span className="text-foreground/80 text-xs font-medium">
           Built on Stellar XLM
@@ -37,7 +41,7 @@ export default function NetworkBadge() {
 
   return (
     <div
-      className="hidden sm:flex items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5"
+      className={`${className} items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5`}
       title={
         hasMismatch
           ? `Wallet is on ${network}, app uses ${appNetwork}`

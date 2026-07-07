@@ -144,7 +144,7 @@ export default function ForDevsPage() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-6">
+      <div className="max-w-4xl mx-auto px-6 pt-16">
         <Link
           href="/"
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors pt-6"

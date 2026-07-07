@@ -35,7 +35,7 @@ function VerifyContent() {
     <div className="min-h-screen">
       <Navbar />
 
-      <main className="relative z-10 max-w-2xl mx-auto px-6 py-12">
+      <main className="relative z-10 max-w-2xl mx-auto px-6 pt-28 pb-12">
         <Link
           href="/"
           className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors mb-8"

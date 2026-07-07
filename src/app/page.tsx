@@ -40,7 +40,7 @@ export default function Home() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-2xl mx-auto px-6 py-12">
+        <div className="relative z-10 max-w-2xl mx-auto px-6 pt-28 pb-12">
 
           {/* Hero */}
           <div className="flex flex-col items-center text-center mb-10">
