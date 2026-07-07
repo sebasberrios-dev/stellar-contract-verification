@@ -22,7 +22,7 @@ function BrandLogo() {
         width={1189}
         height={513}
         priority
-        className="h-9 w-auto select-none"
+        className="h-9 w-auto select-none brand-media"
         aria-hidden="true"
       />
       <span className="hidden sm:inline text-foreground text-[13px] font-medium tracking-wide whitespace-nowrap">

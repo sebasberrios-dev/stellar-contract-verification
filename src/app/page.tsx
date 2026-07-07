@@ -42,7 +42,7 @@ export default function Home() {
             alt=""
             width={1189}
             height={513}
-            className="w-full h-auto"
+            className="w-full h-auto brand-media"
           />
         </div>
 

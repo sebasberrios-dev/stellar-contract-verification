@@ -37,7 +37,7 @@ export default function HeroVideo({ className = "" }: { className?: string }) {
       aria-hidden="true"
       // mix-blend-screen sinks the video's dark space background into the
       // page background, so only the bright glow reads — no floating rectangle
-      className={`select-none pointer-events-none mix-blend-screen ${className}`}
+      className={`select-none pointer-events-none mix-blend-screen brand-media ${className}`}
       style={{ maskImage: mask, WebkitMaskImage: mask }}
     />
   );
