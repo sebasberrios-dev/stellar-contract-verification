@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Navbar from "../components/Navbar";
+import HeroVideo from "../components/HeroVideo";
 import StarryBackground from "../components/StarryBackground";
 import CircuitTraces from "../components/CircuitTraces";
 import AuroraBackground from "../components/AuroraBackground";
@@ -41,9 +42,9 @@ export default function Home() {
           <Image
             src="/images/csv-logo.webp"
             alt=""
-            width={1200}
-            height={604}
-            className="w-full h-auto mix-blend-screen"
+            width={1189}
+            height={513}
+            className="w-full h-auto"
           />
         </div>
 
@@ -53,15 +54,7 @@ export default function Home() {
           {/* Hero */}
           <Reveal>
             <div className="flex flex-col items-center text-center mb-10">
-              <Image
-                src="/images/csv-logo.webp"
-                alt=""
-                width={1200}
-                height={604}
-                priority
-                className="w-[min(420px,82vw)] h-auto mix-blend-screen select-none -my-6"
-                aria-hidden="true"
-              />
+              <HeroVideo className="w-[min(640px,94vw)] -my-10" />
               <h1 className="sr-only">CSV — Contract Source Verify</h1>
               <p className="text-foreground text-xl sm:text-2xl font-semibold tracking-tight mb-2">
                 Contract{" "}

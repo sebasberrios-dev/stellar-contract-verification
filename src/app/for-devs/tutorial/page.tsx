@@ -87,7 +87,9 @@ function StepWrapper({
         </div>
         {!isLast && <div className="w-0.5 flex-1 bg-primary/15 mt-2" />}
       </div>
-      <div className="flex-1 pb-8 md:pb-12">
+      {/* min-w-0: without it wide <pre> children stop the flex item from
+          shrinking and force horizontal page scroll on phones */}
+      <div className="flex-1 min-w-0 pb-8 md:pb-12">
         <h3 className="text-foreground font-semibold text-lg mb-3">{title}</h3>
         {children}
       </div>
@@ -101,7 +103,7 @@ function ContractTypeTabs() {
   return (
     <div>
       <p className="text-muted-foreground text-sm mb-3">Choose your contract type:</p>
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-wrap gap-2 mb-4">
         {(
           [
             { key: "simple", label: "Simple contract" },
@@ -203,7 +205,7 @@ export default function TutorialPage() {
     <div className="min-h-screen bg-background relative">
       <Navbar />
       <AuroraBackground />
-      <div className="relative z-10 max-w-3xl mx-auto px-6 pt-28 pb-12">
+      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pt-28 pb-12">
         <Link
           href="/"
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors mb-6"
@@ -232,7 +234,7 @@ export default function TutorialPage() {
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-medium rounded-full px-3 py-1 mb-6">
             ⚡ Step-by-step guide
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-foreground tracking-tight mb-4">
+          <h1 className="text-3xl sm:text-5xl font-bold text-foreground tracking-tight mb-4">
             How to get your contract{" "}
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
               verified

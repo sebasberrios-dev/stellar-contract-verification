@@ -30,43 +30,39 @@ export default function CodeBlock({
     }
   }
 
-  const copyButton = (
-    <button
-      type="button"
-      onClick={() => void handleCopy()}
-      className={`flex items-center gap-1.5 text-xs rounded-md px-2.5 py-1 border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${
-        isBlue
-          ? "bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary/20"
-          : "bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
-      }`}
-    >
-      {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-      {copied ? "Copied!" : copyLabel}
-    </button>
-  );
-
   return (
     <div
-      className={`relative bg-code border rounded-xl overflow-hidden ${
+      className={`bg-code border rounded-xl overflow-hidden ${
         isBlue ? "border-secondary/20" : "border-primary/15"
       }`}
     >
-      {filename ? (
-        <div
-          className={`flex items-center justify-between px-4 py-3 border-b ${
-            isBlue ? "border-secondary/10" : "border-primary/10"
+      {/* Header bar always present — a floating copy button overlaps code on
+          narrow screens once long lines scroll under it */}
+      <div
+        className={`flex items-center justify-between gap-3 px-4 py-2 border-b ${
+          isBlue ? "border-secondary/10" : "border-primary/10"
+        }`}
+      >
+        <span className="text-muted-foreground/80 text-xs font-mono truncate">
+          {filename ?? ""}
+        </span>
+        <button
+          type="button"
+          onClick={() => void handleCopy()}
+          className={`shrink-0 flex items-center gap-1.5 text-xs rounded-md px-2.5 py-1 border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${
+            isBlue
+              ? "bg-secondary/10 border-secondary/20 text-secondary hover:bg-secondary/20"
+              : "bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
           }`}
         >
-          <span className="text-muted-foreground/80 text-xs font-mono">{filename}</span>
-          {copyButton}
-        </div>
-      ) : (
-        <div className="absolute top-3 right-3 z-10">{copyButton}</div>
-      )}
+          {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+          {copied ? "Copied!" : copyLabel}
+        </button>
+      </div>
       <pre
         className={`p-4 overflow-x-auto text-xs sm:text-sm leading-relaxed font-mono ${
-          filename ? "" : "pr-24"
-        } ${isBlue ? "text-blue-300" : "text-sky-300"}`}
+          isBlue ? "text-blue-300" : "text-sky-300"
+        }`}
       >
         <code>{code}</code>
       </pre>

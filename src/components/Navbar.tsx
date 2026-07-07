@@ -15,14 +15,14 @@ function BrandLogo() {
       aria-label="CSV — Contract Source Verify, home"
       suppressHydrationWarning
     >
-      {/* Neon logo on black — screen blend makes the black vanish on any dark bg */}
+      {/* Neon logo with real alpha — sits clean on any background */}
       <Image
         src="/images/csv-logo.webp"
         alt=""
-        width={1200}
-        height={604}
+        width={1189}
+        height={513}
         priority
-        className="h-9 w-auto mix-blend-screen select-none"
+        className="h-9 w-auto select-none"
         aria-hidden="true"
       />
       <span className="hidden sm:inline text-foreground text-[13px] font-medium tracking-wide whitespace-nowrap">
