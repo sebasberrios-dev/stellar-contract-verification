@@ -8,12 +8,12 @@
    30 dropdowns / 50 modals.
    ============================================================ */
 :root {
-  --background: 228 20% 5%;        /* #0a0b0f */
+  --background: 240 14% 3%;        /* near black */
   --foreground: 210 40% 98%;
 
-  --card: 223 17% 8%;              /* #111318 */
-  --card-hover: 222 19% 11%;       /* #161920 */
-  --border: 230 23% 15%;           /* #1e2130 */
+  --card: 240 10% 6%;
+  --card-hover: 240 9% 9%;
+  --border: 240 9% 13%;
 
   --primary: 195 100% 50%;         /* #00BFFF cyan */
   --primary-foreground: 228 20% 5%;
@@ -58,6 +58,7 @@
   /* Fonts — CSS var injected by next/font at runtime */
   --font-geist: ui-sans-serif, system-ui, sans-serif;
   --font-inter: ui-sans-serif, system-ui, sans-serif;
+  --font-display: ui-sans-serif, system-ui, sans-serif;
   --font-jetbrains: ui-monospace, SFMono-Regular, monospace;
 
   /* Shadows */
@@ -69,6 +70,16 @@
 .contract-id,
 code {
   font-family: var(--font-mono, var(--font-jetbrains, ui-monospace, monospace));
+}
+
+/* Headlines in the display face, tight-tracked at any size (stellar.org look) */
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display, var(--font-inter, ui-sans-serif, system-ui, sans-serif));
+  letter-spacing: -0.02em;
 }
 
 html,
@@ -162,54 +173,46 @@ body {
   filter: none;
 }
 
-/* Aurora hero — blobs animate transform only (compositor thread) */
-.aurora-blob {
+/* Aurora — one soft diagonal beam (reference-image style) plus a faint
+   counter-beam for depth. Transform-only animation (compositor thread). */
+.aurora-beam {
   position: absolute;
-  width: 480px;
-  height: 480px;
   border-radius: 9999px;
-  filter: blur(70px);
-  opacity: 0.25;
+  filter: blur(90px);
   will-change: transform;
 }
 
-.aurora-blob-1 {
-  background: radial-gradient(circle, hsl(var(--primary)) 0%, transparent 70%);
-  top: -140px;
-  left: 6%;
-  animation: aurora-drift-1 18s ease-in-out infinite alternate;
+.aurora-beam-1 {
+  width: 1100px;
+  height: 560px;
+  left: 50%;
+  top: -180px;
+  margin-left: -550px;
+  opacity: 0.22;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, hsl(var(--primary)) 0%, hsl(var(--secondary) / 0.6) 45%, transparent 72%);
+  transform: rotate(-14deg);
+  animation: aurora-beam-drift-1 24s ease-in-out infinite alternate;
 }
 
-.aurora-blob-2 {
-  background: radial-gradient(circle, hsl(var(--secondary)) 0%, transparent 70%);
-  top: -80px;
-  right: 2%;
-  animation: aurora-drift-2 22s ease-in-out infinite alternate;
-}
-
-.aurora-blob-3 {
-  background: radial-gradient(circle, hsl(var(--accent)) 0%, transparent 70%);
-  top: 140px;
-  left: 36%;
-  width: 380px;
+.aurora-beam-2 {
+  width: 700px;
   height: 380px;
-  opacity: 0.14;
-  animation: aurora-drift-3 26s ease-in-out infinite alternate;
+  right: -160px;
+  top: 200px;
+  opacity: 0.1;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, hsl(var(--accent)) 0%, transparent 70%);
+  transform: rotate(18deg);
+  animation: aurora-beam-drift-2 30s ease-in-out infinite alternate;
 }
 
-@keyframes aurora-drift-1 {
-  from { transform: translate3d(0, 0, 0) scale(1); }
-  to { transform: translate3d(120px, 60px, 0) scale(1.15); }
+@keyframes aurora-beam-drift-1 {
+  from { transform: rotate(-14deg) translate3d(0, 0, 0) scale(1); }
+  to { transform: rotate(-11deg) translate3d(60px, 30px, 0) scale(1.08); }
 }
 
-@keyframes aurora-drift-2 {
-  from { transform: translate3d(0, 0, 0) scale(1.1); }
-  to { transform: translate3d(-140px, 40px, 0) scale(0.95); }
-}
-
-@keyframes aurora-drift-3 {
-  from { transform: translate3d(0, 0, 0); }
-  to { transform: translate3d(80px, -50px, 0); }
+@keyframes aurora-beam-drift-2 {
+  from { transform: rotate(18deg) translate3d(0, 0, 0); }
+  to { transform: rotate(15deg) translate3d(-70px, -30px, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -222,7 +225,7 @@ body {
     filter: none;
     transition: none;
   }
-  .aurora-blob {
+  .aurora-beam {
     animation: none;
     will-change: auto;
   }

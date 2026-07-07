@@ -166,7 +166,7 @@ function VerifyStep() {
       <button
         type="button"
         onClick={handleVerify}
-        className="w-full h-11 bg-gradient-to-r from-primary to-secondary text-white font-semibold text-sm px-6 rounded-lg transition-all hover:shadow-glow-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background mb-6"
+        className="w-full h-11 bg-foreground text-background font-semibold text-sm px-6 rounded-lg transition-all hover:bg-foreground/90 hover:shadow-glow-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background mb-6"
       >
         Verify Contract →
       </button>

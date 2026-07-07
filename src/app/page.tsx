@@ -4,7 +4,6 @@ import Image from "next/image";
 import Navbar from "../components/Navbar";
 import HeroVideo from "../components/HeroVideo";
 import StarryBackground from "../components/StarryBackground";
-import CircuitTraces from "../components/CircuitTraces";
 import AuroraBackground from "../components/AuroraBackground";
 import Reveal from "../components/Reveal";
 import VerificationForm from "../components/VerificationForm";
@@ -29,9 +28,8 @@ export default function Home() {
       <Navbar />
 
       <main className="relative">
-        {/* Background layers */}
+        {/* Background layers — no circuit traces: cleaner, type-first look */}
         <StarryBackground />
-        <CircuitTraces />
         <AuroraBackground />
 
         {/* CSV logo watermark — sits above the starry background, below the content */}
@@ -53,17 +51,18 @@ export default function Home() {
 
           {/* Hero */}
           <Reveal>
-            <div className="flex flex-col items-center text-center mb-10">
-              <HeroVideo className="w-[min(640px,94vw)] -my-10" />
-              <h1 className="sr-only">CSV — Contract Source Verify</h1>
-              <p className="text-foreground text-xl sm:text-2xl font-semibold tracking-tight mb-2">
-                Contract{" "}
+            <div className="flex flex-col items-center text-center mb-12">
+              <HeroVideo className="w-[min(460px,88vw)] -my-8" />
+              <h1 className="text-4xl sm:text-6xl font-bold text-foreground leading-[1.05] mt-4 mb-5">
+                Verify smart contracts.
+                <br />
                 <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Source Verify
+                  Trust the source.
                 </span>
-              </p>
-              <p className="text-muted-foreground text-base sm:text-lg tracking-wide">
-                Secure&nbsp;•&nbsp;Transparent&nbsp;•&nbsp;Verified
+              </h1>
+              <p className="text-muted-foreground text-lg sm:text-xl max-w-xl leading-relaxed">
+                CSV rebuilds Soroban contracts from their public source and
+                proves the on-chain WASM matches. Secure. Transparent. Verified.
               </p>
             </div>
           </Reveal>
