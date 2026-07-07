@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Navbar from "../../../components/Navbar";
 import CodeBlock from "../../../components/ui/CodeBlock";
+import AuroraBackground from "../../../components/AuroraBackground";
+import Reveal from "../../../components/Reveal";
 
 const STEP1_CODE = `git add .
 git commit -m "ready to deploy"
@@ -198,9 +200,10 @@ function TroubleshootingSection() {
 
 export default function TutorialPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       <Navbar />
-      <div className="max-w-3xl mx-auto px-6 pt-28 pb-12">
+      <AuroraBackground />
+      <div className="relative z-10 max-w-3xl mx-auto px-6 pt-28 pb-12">
         <Link
           href="/"
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors mb-6"
@@ -242,6 +245,7 @@ export default function TutorialPage() {
         </section>
 
         {/* Prerequisites */}
+        <Reveal>
         <section className="mb-14">
           <div className="bg-card border border-border rounded-2xl p-6">
             <h2 className="text-foreground font-semibold text-lg mb-4">
@@ -262,9 +266,11 @@ export default function TutorialPage() {
             </ul>
           </div>
         </section>
+        </Reveal>
 
         {/* Stepper */}
         <section className="mb-6">
+          <Reveal>
           <StepWrapper
             number={1}
             title="Commit your code and get the exact SHA"
@@ -275,11 +281,15 @@ export default function TutorialPage() {
             </p>
             <CodeBlock code={STEP1_CODE} />
           </StepWrapper>
+          </Reveal>
 
+          <Reveal>
           <StepWrapper number={2} title="Build with SEP-58 metadata embedded">
             <ContractTypeTabs />
           </StepWrapper>
+          </Reveal>
 
+          <Reveal>
           <StepWrapper number={3} title="Deploy to Stellar Testnet">
             <CodeBlock code={DEPLOY_CODE} />
             <p className="text-muted-foreground text-sm leading-relaxed mt-4">
@@ -287,13 +297,17 @@ export default function TutorialPage() {
               long. Copy it.
             </p>
           </StepWrapper>
+          </Reveal>
 
+          <Reveal>
           <StepWrapper number={4} title="Verify on CSV" isLast>
             <VerifyStep />
           </StepWrapper>
+          </Reveal>
         </section>
 
         {/* GET-first API reference */}
+        <Reveal>
         <section className="mb-14">
           <h2 className="text-foreground font-semibold text-xl mb-2">
             Query the API directly
@@ -344,14 +358,17 @@ export default function TutorialPage() {
             </div>
           </div>
         </section>
+        </Reveal>
 
         {/* Troubleshooting */}
+        <Reveal>
         <section className="mb-14">
           <h2 className="text-foreground font-semibold text-xl mb-6">
             Troubleshooting
           </h2>
           <TroubleshootingSection />
         </section>
+        </Reveal>
 
         {/* Back button */}
         <div className="text-center">

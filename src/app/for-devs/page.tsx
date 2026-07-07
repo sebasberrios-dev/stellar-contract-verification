@@ -5,6 +5,8 @@ import Link from "next/link";
 import { GitCommit, Terminal, Rocket, CheckCircle2 } from "lucide-react";
 import Navbar from "../../components/Navbar";
 import CodeBlock from "../../components/ui/CodeBlock";
+import AuroraBackground from "../../components/AuroraBackground";
+import Reveal from "../../components/Reveal";
 
 const YAML_TEMPLATE = `name: Build & Verify Soroban Contract
 on:
@@ -142,9 +144,10 @@ function FaqAccordion() {
 
 export default function ForDevsPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative">
       <Navbar />
-      <div className="max-w-4xl mx-auto px-6 pt-16">
+      <AuroraBackground />
+      <div className="relative z-10 max-w-4xl mx-auto px-6 pt-16">
         <Link
           href="/"
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors pt-6"
@@ -181,6 +184,7 @@ export default function ForDevsPage() {
         </section>
 
         {/* What is SEP-58? */}
+        <Reveal>
         <section className="mb-16">
           <div className="bg-card border border-border rounded-2xl p-6">
             <span className="text-primary text-2xl" aria-hidden="true">◈</span>
@@ -194,8 +198,10 @@ export default function ForDevsPage() {
             </p>
           </div>
         </section>
+        </Reveal>
 
         {/* Quick overview — 4 steps */}
+        <Reveal>
         <section className="mb-16">
           <h2 className="text-foreground font-semibold text-xl mb-6">Quick overview — 4 steps</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
@@ -224,8 +230,10 @@ export default function ForDevsPage() {
             Follow the full tutorial →
           </Link>
         </section>
+        </Reveal>
 
         {/* GitHub Actions */}
+        <Reveal>
         <section className="mb-16">
           <div className="bg-card border border-border rounded-2xl p-6">
             <h2 className="text-foreground font-semibold text-lg mb-1">Automate SEP-58 in your CI/CD</h2>
@@ -243,14 +251,18 @@ export default function ForDevsPage() {
             />
           </div>
         </section>
+        </Reveal>
 
         {/* FAQ */}
+        <Reveal>
         <section className="mb-16">
           <h2 className="text-foreground font-semibold text-xl mb-6">FAQ</h2>
           <FaqAccordion />
         </section>
+        </Reveal>
 
         {/* CTA final */}
+        <Reveal>
         <section className="mb-16">
           <div className="rounded-2xl border border-border p-8 text-center bg-gradient-to-br from-primary/10 to-secondary/10">
             <h2 className="text-foreground font-semibold text-xl mb-2">Need help implementing SEP-58?</h2>
@@ -285,6 +297,7 @@ export default function ForDevsPage() {
             </div>
           </div>
         </section>
+        </Reveal>
       </div>
     </div>
   );

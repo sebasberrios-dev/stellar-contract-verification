@@ -1,10 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Navbar from "../components/Navbar";
-import Logo from "../components/Logo";
 import StarryBackground from "../components/StarryBackground";
 import CircuitTraces from "../components/CircuitTraces";
-import ShieldLogo from "../components/ShieldLogo";
+import AuroraBackground from "../components/AuroraBackground";
+import Reveal from "../components/Reveal";
 import VerificationForm from "../components/VerificationForm";
 import BadgesRow from "../components/BadgesRow";
 import ResultPanel from "../components/ResultPanel";
@@ -30,38 +31,63 @@ export default function Home() {
         {/* Background layers */}
         <StarryBackground />
         <CircuitTraces />
+        <AuroraBackground />
 
         {/* CSV logo watermark — sits above the starry background, below the content */}
         <div
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] w-[min(600px,90vw)] h-[min(600px,90vw)] opacity-[0.06] pointer-events-none"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] w-[min(680px,90vw)] opacity-[0.05] pointer-events-none"
           aria-hidden="true"
         >
-          <Logo variant="full" className="w-full h-full" />
+          <Image
+            src="/images/csv-logo.webp"
+            alt=""
+            width={1200}
+            height={604}
+            className="w-full h-auto mix-blend-screen"
+          />
         </div>
 
         {/* Content */}
         <div className="relative z-10 max-w-2xl mx-auto px-6 pt-28 pb-12">
 
           {/* Hero */}
-          <div className="flex flex-col items-center text-center mb-10">
-            <ShieldLogo className="mb-6" />
-            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-3">
-              Contract Source Verify
-            </h1>
-            <p className="text-muted-foreground text-lg tracking-wide">
-              Secure&nbsp;•&nbsp;Transparent&nbsp;•&nbsp;Verified
-            </p>
-          </div>
+          <Reveal>
+            <div className="flex flex-col items-center text-center mb-10">
+              <Image
+                src="/images/csv-logo.webp"
+                alt=""
+                width={1200}
+                height={604}
+                priority
+                className="w-[min(420px,82vw)] h-auto mix-blend-screen select-none -my-6"
+                aria-hidden="true"
+              />
+              <h1 className="sr-only">CSV — Contract Source Verify</h1>
+              <p className="text-foreground text-xl sm:text-2xl font-semibold tracking-tight mb-2">
+                Contract{" "}
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  Source Verify
+                </span>
+              </p>
+              <p className="text-muted-foreground text-base sm:text-lg tracking-wide">
+                Secure&nbsp;•&nbsp;Transparent&nbsp;•&nbsp;Verified
+              </p>
+            </div>
+          </Reveal>
 
           {/* Verification form */}
-          <div className="mb-6">
-            <VerificationForm onVerify={handleVerify} flowState={flowState} />
-          </div>
+          <Reveal delay={100}>
+            <div className="mb-6">
+              <VerificationForm onVerify={handleVerify} flowState={flowState} />
+            </div>
+          </Reveal>
 
           {/* Badges */}
-          <div className="mb-8">
-            <BadgesRow />
-          </div>
+          <Reveal delay={200}>
+            <div className="mb-8">
+              <BadgesRow />
+            </div>
+          </Reveal>
 
           {/* Result panel — appears after verification */}
           <div className="mb-8">
@@ -75,7 +101,9 @@ export default function Home() {
           </div>
 
           {/* Accordion — learn more */}
-          <AccordionSection />
+          <Reveal>
+            <AccordionSection />
+          </Reveal>
 
           {/* Mini footer inside content col */}
           <p className="text-center text-muted-foreground/70 text-xs mt-12 tracking-widest uppercase">
