@@ -176,7 +176,7 @@ export default function ForDevsPage() {
           </div>
           <Link
             href="/for-devs/tutorial"
-            className="inline-flex items-center gap-2 h-11 bg-gradient-to-r from-primary to-secondary text-white font-semibold text-sm rounded-lg px-6 transition-all hover:shadow-glow-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex items-center gap-2 h-11 bg-foreground text-background font-semibold text-sm rounded-full px-6 transition-all hover:bg-foreground/90 hover:shadow-glow-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             suppressHydrationWarning
           >
             View full tutorial →
@@ -224,7 +224,7 @@ export default function ForDevsPage() {
           </div>
           <Link
             href="/for-devs/tutorial"
-            className="flex items-center justify-center gap-2 w-full h-11 bg-gradient-to-r from-primary to-secondary text-white font-semibold text-sm rounded-lg px-6 transition-all hover:shadow-glow-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="flex items-center justify-center gap-2 w-full h-11 bg-foreground text-background font-semibold text-sm rounded-full px-6 transition-all hover:bg-foreground/90 hover:shadow-glow-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             suppressHydrationWarning
           >
             Follow the full tutorial →
@@ -274,7 +274,7 @@ export default function ForDevsPage() {
                 href="https://x.com/MetaStellaX"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-card border border-border text-foreground text-sm font-medium rounded-xl px-6 py-3 hover:bg-card-hover hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                className="inline-flex items-center gap-2 bg-card border border-border text-foreground text-sm font-medium rounded-full px-6 py-3 hover:bg-card-hover hover:border-foreground/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 suppressHydrationWarning
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
@@ -286,7 +286,7 @@ export default function ForDevsPage() {
                 href="https://t.me/+LkioKlyV7BhlN2Yx"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 bg-secondary/10 border border-secondary/30 text-secondary text-sm font-medium rounded-xl px-6 py-3 hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+                className="inline-flex items-center gap-2 bg-secondary/10 border border-secondary/30 text-secondary text-sm font-medium rounded-full px-6 py-3 hover:bg-secondary/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                 suppressHydrationWarning
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">

@@ -114,7 +114,7 @@ function ContractTypeTabs() {
             key={option.key}
             type="button"
             onClick={() => setTab(option.key)}
-            className={`text-sm rounded-lg px-4 py-2 border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${
+            className={`text-sm rounded-full px-4 py-2 border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 ${
               tab === option.key
                 ? "bg-primary/10 border-primary/30 text-primary"
                 : "border-border text-muted-foreground hover:text-foreground/80"
@@ -166,7 +166,7 @@ function VerifyStep() {
       <button
         type="button"
         onClick={handleVerify}
-        className="w-full h-11 bg-foreground text-background font-semibold text-sm px-6 rounded-lg transition-all hover:bg-foreground/90 hover:shadow-glow-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background mb-6"
+        className="w-full h-11 bg-foreground text-background font-semibold text-sm px-6 rounded-full transition-all hover:bg-foreground/90 hover:shadow-glow-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background mb-6"
       >
         Verify Contract →
       </button>
@@ -376,7 +376,7 @@ export default function TutorialPage() {
         <div className="text-center">
           <Link
             href="/for-devs"
-            className="inline-flex items-center gap-2 border border-border text-foreground/80 text-sm font-medium rounded-lg px-5 py-2.5 hover:bg-card-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+            className="inline-flex items-center gap-2 border border-border text-foreground/80 text-sm font-medium rounded-full px-5 py-2.5 hover:bg-card-hover hover:border-foreground/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             suppressHydrationWarning
           >
             ← Back to For Devs

@@ -34,7 +34,7 @@ export default function WalletButton() {
       <button
         type="button"
         disabled
-        className="bg-card border border-border text-foreground/80 text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="bg-card border border-border text-foreground/80 text-sm font-medium px-4 py-2 rounded-full flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <svg
           className="animate-spin w-4 h-4 text-muted-foreground"
@@ -130,7 +130,7 @@ export default function WalletButton() {
       <button
         type="button"
         onClick={() => void connect()}
-        className="bg-card border border-border text-foreground/80 text-sm font-medium px-4 py-2 rounded-lg hover:bg-card-hover hover:border-primary/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+        className="bg-card border border-border text-foreground/80 text-sm font-medium px-4 py-2 rounded-full hover:bg-card-hover hover:border-foreground/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
       >
         Connect Wallet
       </button>
