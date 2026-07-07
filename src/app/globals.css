@@ -1,33 +1,69 @@
 @import "tailwindcss";
 
-@theme {
-  /* Colors */
-  --color-cyan-primary: #00BFFF;
-  --color-blue-secondary: #3B82F6;
-  --color-surface-glass: rgba(255, 255, 255, 0.05);
-  --color-border-glass: rgba(255, 255, 255, 0.10);
+/* ============================================================
+   Design tokens — single source of truth (HSL triplets).
+   Dark-first: values live in :root. If a light theme ships,
+   add a `.light { … }` block overriding the same variables.
+   z-index scale: 0 bg / 1 watermark / 10 content / 20 navbar /
+   30 dropdowns / 50 modals.
+   ============================================================ */
+:root {
+  --background: 228 20% 5%;        /* #0a0b0f */
+  --foreground: 210 40% 98%;
 
+  --card: 223 17% 8%;              /* #111318 */
+  --card-hover: 222 19% 11%;       /* #161920 */
+  --border: 230 23% 15%;           /* #1e2130 */
+
+  --primary: 195 100% 50%;         /* #00BFFF cyan */
+  --primary-foreground: 228 20% 5%;
+  --secondary: 217 91% 60%;        /* #3B82F6 blue */
+  --accent: 271 91% 65%;           /* purple */
+
+  --muted: 223 17% 12%;
+  --muted-foreground: 215 20% 65%; /* slate-400 */
+
+  --destructive: 0 91% 71%;        /* red-400 */
+  --warning: 43 96% 56%;           /* amber-400 */
+  --success: 142 69% 58%;          /* green-400 */
+
+  --ring: 195 100% 50%;
+
+  /* Code blocks — slightly blue-shifted panel */
+  --code: 217 53% 7%;              /* #080e1a */
+}
+
+/* Map tokens to Tailwind v4 utilities (bg-background, text-primary,
+   border-border, ring-ring, text-muted-foreground, …) */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-hover: hsl(var(--card-hover));
+  --color-border: hsl(var(--border));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-accent: hsl(var(--accent));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-warning: hsl(var(--warning));
+  --color-success: hsl(var(--success));
+  --color-ring: hsl(var(--ring));
+  --color-code: hsl(var(--code));
+}
+
+@theme {
   /* Fonts — CSS var injected by next/font at runtime */
   --font-geist: ui-sans-serif, system-ui, sans-serif;
   --font-inter: ui-sans-serif, system-ui, sans-serif;
   --font-jetbrains: ui-monospace, SFMono-Regular, monospace;
 
   /* Shadows */
-  --shadow-glow-cyan: 0 0 20px rgba(0, 191, 255, 0.15);
-  --shadow-glow-cyan-strong: 0 0 20px rgba(0, 191, 255, 0.4);
-}
-
-:root {
-  --background: #0a0b0f;
-  --foreground: #ffffff;
-  --color-accent: #3b82f6;
-  --color-verified: #22c55e;
-  --color-pending: #f59e0b;
-  --color-failed: #ef4444;
-  --bg: #0a0b0f;
-  --surface: #111318;
-  --surface-2: #161920;
-  --border: #1e2130;
+  --shadow-glow-cyan: 0 0 20px hsl(195 100% 50% / 0.15);
+  --shadow-glow-cyan-strong: 0 0 20px hsl(195 100% 50% / 0.4);
+  --shadow-glow-blue: 0 0 24px hsl(217 91% 60% / 0.4);
 }
 
 .contract-id,
@@ -37,8 +73,8 @@ code {
 
 html,
 body {
-  background: #0a0b0f;
-  color: #ffffff;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 /* Scrollbar dark */
@@ -47,14 +83,19 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #111111;
+  background: hsl(var(--card));
 }
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: hsl(var(--border));
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #00BFFF;
+  background: hsl(var(--primary));
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) hsl(var(--background));
 }
 
 /* Utility classes */
@@ -67,31 +108,25 @@ body {
 }
 
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(0, 191, 255, 0.15);
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.15);
 }
 
 /* Gradient text utility */
 .gradient-text {
-  background: linear-gradient(135deg, #00BFFF 0%, #3B82F6 50%, #8B5CF6 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--accent)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Scroll personalizado (complementa el existente) */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #1e2130 #0a0b0f;
-}
-
 /* Selección de texto */
 ::selection {
-  background: rgba(0, 191, 255, 0.2);
-  color: #ffffff;
+  background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
 }
 ::-moz-selection {
-  background: rgba(0, 191, 255, 0.2);
-  color: #ffffff;
+  background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
 }
 
 /* ResultPanel entrance animation — replaces tailwindcss-animate */
@@ -108,4 +143,10 @@ body {
 
 .animate-enter {
   animation: enter-slide-up 0.5s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-enter {
+    animation: none;
+  }
 }
