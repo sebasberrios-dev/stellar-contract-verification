@@ -7,10 +7,15 @@ import type { VerifyFlowState } from "../types/index";
 interface VerificationFormProps {
   onVerify: (contractId: string) => Promise<void>;
   flowState: VerifyFlowState;
+  initialValue?: string;
 }
 
-export default function VerificationForm({ onVerify, flowState }: VerificationFormProps) {
-  const [contractId, setContractId] = useState("");
+export default function VerificationForm({
+  onVerify,
+  flowState,
+  initialValue = "",
+}: VerificationFormProps) {
+  const [contractId, setContractId] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
 

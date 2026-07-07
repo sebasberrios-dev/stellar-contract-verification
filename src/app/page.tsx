@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Navbar from "../components/Navbar";
 import Logo from "../components/Logo";
 import StarryBackground from "../components/StarryBackground";
@@ -10,62 +9,18 @@ import VerificationForm from "../components/VerificationForm";
 import BadgesRow from "../components/BadgesRow";
 import ResultPanel from "../components/ResultPanel";
 import AccordionSection from "../components/AccordionSection";
-import { lookupContract, submitVerification } from "./actions/verify";
-import type { VerificationEntry, VerifyFlowState } from "../types/index";
+import { useVerifyFlow } from "../hooks/useVerifyFlow";
 
 export default function Home() {
-  const [verificationResult, setVerificationResult] = useState<VerificationEntry | null>(null);
-  const [contractId, setContractId] = useState<string>("");
-  const [flowState, setFlowState] = useState<VerifyFlowState>("idle");
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isCached, setIsCached] = useState(false);
-
-  async function handleVerify(id: string) {
-    setVerificationResult(null);
-    setFetchError(null);
-    setContractId(id);
-
-    // Step 1: GET-first — check cache
-    setFlowState("loading-cache");
-    try {
-      const lookup = await lookupContract(id);
-      const first = lookup.verifications[0];
-      if (
-        first &&
-        (first.status === "verified" ||
-          first.status === "mismatch" ||
-          first.status === "failed")
-      ) {
-        setVerificationResult(first);
-        setIsCached(true);
-        setFlowState("cached-result");
-        return;
-      }
-    } catch {
-      // Cache miss or backend unreachable — fall through to POST
-    }
-
-    // Step 2: POST — trigger a rebuild
-    setFlowState("verifying");
-    try {
-      const result = await submitVerification(id);
-      const entry = result.verifications[0] ?? null;
-      if (!entry) {
-        setFetchError("Verification finished but no result was returned.");
-        setFlowState("error");
-        return;
-      }
-      setVerificationResult(entry);
-      setIsCached(false);
-      setFlowState("cached-result");
-    } catch (e) {
-      setFetchError(e instanceof Error ? e.message : "Unexpected error");
-      setIsCached(false);
-      setFlowState("error");
-    }
-  }
-
-  const showResult = flowState === "cached-result" || flowState === "error";
+  const {
+    verificationResult,
+    contractId,
+    flowState,
+    fetchError,
+    isCached,
+    showResult,
+    handleVerify,
+  } = useVerifyFlow();
 
   return (
     <div className="min-h-screen" style={{ background: "#0a0b0f" }}>

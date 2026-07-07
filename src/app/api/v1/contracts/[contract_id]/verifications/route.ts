@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { lookupByContractId } from "../../../../../lib/api";
+import { lookupByContractId } from "../../../../../../lib/api";
 
 interface ErrorResponse {
   error: string;
