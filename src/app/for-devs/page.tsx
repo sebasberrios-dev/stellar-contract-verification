@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: stellar/stellar-cli@v27.0.0
+      - run: rustup target add wasm32v1-none
       - name: Build with SEP-58 metadata
         run: |
           stellar contract build \\
@@ -57,7 +59,7 @@ const STEPS = [
 const FAQ_ITEMS = [
   {
     q: "Is mainnet supported?",
-    a: "Testnet only for now — mainnet is coming soon. Select testnet on the dashboard before entering a Contract ID.",
+    a: "Testnet only for now — mainnet is coming soon. All verifications run against testnet automatically.",
   },
   {
     q: "How long does verification take?",

@@ -27,7 +27,7 @@ const WORKSPACE_BUILD_CODE = `stellar contract build \\
   --meta bldopt=--package=my-contract-name`;
 
 const DEPLOY_CODE = `stellar contract deploy \\
-  --wasm target/wasm32-unknown-unknown/release/your_contract.wasm \\
+  --wasm target/wasm32v1-none/release/your_contract.wasm \\
   --network testnet \\
   --source YOUR_ACCOUNT_NAME`;
 
@@ -39,7 +39,7 @@ const PREREQUISITES = [
   "stellar-cli installed (v26+)",
   "Contract compiles with stellar contract build",
   "Source code in a public GitHub repository",
-  "Docker installed (used internally by stellar-cli)",
+  "No Docker needed on your machine — CSV rebuilds your contract in its own sandbox",
 ];
 
 const TROUBLESHOOTING = [

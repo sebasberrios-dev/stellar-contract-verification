@@ -182,7 +182,7 @@ export default function ResultPanel({
               href={data.verifier.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-foreground/80 text-sm hover:text-white transition-colors"
+              className="text-foreground/80 text-sm hover:text-foreground transition-colors"
               suppressHydrationWarning
             >
               {data.verifier.name}

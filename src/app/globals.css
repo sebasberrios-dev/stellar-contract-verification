@@ -8,17 +8,18 @@
    30 dropdowns / 50 modals.
    ============================================================ */
 :root {
-  --background: 240 14% 3%;        /* near black */
+  /* Palette: "Ember cálido" — warm near-black with orange/red/gold accents */
+  --background: 20 14% 3%;
   --foreground: 210 40% 98%;
 
-  --card: 240 10% 6%;
-  --card-hover: 240 9% 9%;
-  --border: 240 9% 13%;
+  --card: 20 10% 6%;
+  --card-hover: 20 9% 9%;
+  --border: 20 10% 13%;
 
-  --primary: 195 100% 50%;         /* #00BFFF cyan */
-  --primary-foreground: 228 20% 5%;
-  --secondary: 217 91% 60%;        /* #3B82F6 blue */
-  --accent: 271 91% 65%;           /* purple */
+  --primary: 22 92% 58%;           /* ember orange */
+  --primary-foreground: 20 14% 4%;
+  --secondary: 350 80% 58%;        /* warm red */
+  --accent: 42 90% 58%;            /* gold */
 
   --muted: 223 17% 12%;
   --muted-foreground: 215 20% 65%; /* slate-400 */
@@ -27,10 +28,13 @@
   --warning: 43 96% 56%;           /* amber-400 */
   --success: 142 69% 58%;          /* green-400 */
 
-  --ring: 195 100% 50%;
+  --ring: 22 92% 58%;
 
-  /* Code blocks — slightly blue-shifted panel */
-  --code: 217 53% 7%;              /* #080e1a */
+  /* Code blocks — slightly warm-shifted panel */
+  --code: 20 25% 7%;
+
+  /* Brand media (logo, hero video) — cyan source assets rotated to ember */
+  --media-hue: -173deg;
 }
 
 /* Map tokens to Tailwind v4 utilities (bg-background, text-primary,

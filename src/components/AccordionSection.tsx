@@ -104,7 +104,7 @@ const ITEMS: AccordionItem[] = [
       <ol className="space-y-3">
         {[
           { n: "01", text: <>Fetch the deployed WASM bytecode for the given contract ID from the Stellar RPC node.</> },
-          { n: "02", text: <>Extract the <Code>contractmeta</Code> custom section embedded in the WASM binary.</> },
+          { n: "02", text: <>Extract the <Code>contractmetav0</Code> custom section embedded in the WASM binary.</> },
           { n: "03", text: <>Parse the SEP-58 fields (<Code>source_repo</Code>, <Code>source_rev</Code>, <Code>bldimg</Code>).</> },
           { n: "04", text: <>Clone the repository at the exact commit referenced by <Code>source_rev</Code>.</> },
           { n: "05", text: <>Reproduce the build inside an isolated Docker container using the <Code>bldimg</Code> image.</> },
