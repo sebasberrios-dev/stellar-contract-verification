@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Inter_Tight, JetBrains_Mono } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { LanguageProvider } from "../i18n/LanguageContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -44,7 +45,7 @@ export default function RootLayout({
         style={{ fontFamily: "var(--font-inter, ui-sans-serif, system-ui, sans-serif)" }}
         suppressHydrationWarning
       >
-        {children}
+        <LanguageProvider>{children}</LanguageProvider>
       </body>
     </html>
   );

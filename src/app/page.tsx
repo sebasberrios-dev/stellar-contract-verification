@@ -11,8 +11,10 @@ import BadgesRow from "../components/BadgesRow";
 import ResultPanel from "../components/ResultPanel";
 import AccordionSection from "../components/AccordionSection";
 import { useVerifyFlow } from "../hooks/useVerifyFlow";
+import { useI18n } from "../i18n/LanguageContext";
 
 export default function Home() {
+  const { d } = useI18n();
   const {
     verificationResult,
     contractId,
@@ -57,15 +59,14 @@ export default function Home() {
                 CSV Verify — Contract Source Verify
               </p>
               <h1 className="text-4xl sm:text-6xl font-bold text-foreground leading-[1.05] mb-5">
-                Verify smart contracts.
+                {d.home.heroTitle1}
                 <br />
                 <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Trust the source.
+                  {d.home.heroTitle2}
                 </span>
               </h1>
               <p className="text-muted-foreground text-lg sm:text-xl max-w-xl leading-relaxed">
-                CSV Verify rebuilds Soroban contracts from their public source and
-                proves the on-chain WASM matches. Secure. Transparent. Verified.
+                {d.home.heroSub}
               </p>
             </div>
           </Reveal>

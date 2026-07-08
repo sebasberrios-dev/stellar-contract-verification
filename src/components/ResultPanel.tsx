@@ -2,6 +2,8 @@
 
 import type { VerificationEntry } from "../types/index";
 import { LEVEL_LABELS } from "../types/index";
+import { useI18n } from "../i18n/LanguageContext";
+import type { Dict } from "../i18n/translations";
 
 interface ResultPanelProps {
   data: VerificationEntry | null;
@@ -41,7 +43,7 @@ function truncateId(id: string, start = 8, end = 6): string {
 const STATUS_CONFIG = {
   verified: {
     border: "border-success/30",
-    label: "Contract Verified",
+    labelKey: "statusVerified",
     labelColor: "text-success",
     badgeColor: "text-success",
     shieldStroke: "hsl(var(--success))",
@@ -50,7 +52,7 @@ const STATUS_CONFIG = {
   },
   mismatch: {
     border: "border-destructive/40",
-    label: "Hash Mismatch",
+    labelKey: "statusMismatch",
     labelColor: "text-destructive",
     badgeColor: "text-destructive",
     shieldStroke: "hsl(var(--destructive))",
@@ -59,7 +61,7 @@ const STATUS_CONFIG = {
   },
   failed: {
     border: "border-destructive/40",
-    label: "Build Failed",
+    labelKey: "statusFailed",
     labelColor: "text-destructive",
     badgeColor: "text-destructive",
     shieldStroke: "hsl(var(--destructive))",
@@ -68,14 +70,17 @@ const STATUS_CONFIG = {
   },
   unverified: {
     border: "border-warning/40",
-    label: "Not Verified",
+    labelKey: "statusUnverified",
     labelColor: "text-warning",
     badgeColor: "text-warning",
     shieldStroke: "hsl(var(--warning))",
     showCheckmark: false,
     showPing: false,
   },
-} as const;
+} as const satisfies Record<
+  string,
+  { labelKey: keyof Dict["result"] } & Record<string, unknown>
+>;
 
 export default function ResultPanel({
   data,
@@ -84,6 +89,8 @@ export default function ResultPanel({
   visible,
   isCached,
 }: ResultPanelProps) {
+  const { d } = useI18n();
+
   if (!visible) return null;
 
   if (fetchError) {
@@ -92,7 +99,7 @@ export default function ResultPanel({
         <div className="flex items-center gap-3 mb-4">
           <span className="text-destructive text-lg leading-none">✗</span>
           <span className="text-destructive font-semibold tracking-widest text-sm uppercase">
-            Request Failed
+            {d.result.requestFailed}
           </span>
         </div>
         <p className="text-muted-foreground text-sm font-mono break-all">{fetchError}</p>
@@ -125,12 +132,12 @@ export default function ResultPanel({
             </span>
           )}
           <span className={`${cfg.labelColor} font-semibold tracking-widest text-sm uppercase`}>
-            {cfg.label}
+            {d.result[cfg.labelKey]}
           </span>
         </div>
         {isCached && (
           <span className="flex items-center gap-1 bg-primary/10 border border-primary/20 text-primary text-xs font-medium rounded-full px-2.5 py-0.5">
-            ⚡ Cached
+            ⚡ {d.result.cached}
           </span>
         )}
       </div>
@@ -138,14 +145,14 @@ export default function ResultPanel({
       {/* Data grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <div className="flex flex-col gap-1">
-          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">Contract</span>
+          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">{d.result.contract}</span>
           <span className="font-mono text-foreground/90 text-sm break-all">
             {truncateId(contractId)}
           </span>
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">Repository</span>
+          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">{d.result.repository}</span>
           {data.source_repo ? (
             <a
               href={data.source_repo}
@@ -162,21 +169,21 @@ export default function ResultPanel({
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">Commit</span>
+          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">{d.result.commit}</span>
           <span className="font-mono text-foreground/90 text-sm">
             {data.source_rev ? truncateId(data.source_rev, 10, 0) : "—"}
           </span>
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">Build Image</span>
+          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">{d.result.buildImage}</span>
           <span className="font-mono text-foreground/90 text-sm break-all">
             {buildImage ? truncateId(buildImage, 28, 0) : "—"}
           </span>
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">Verifier</span>
+          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">{d.result.verifier}</span>
           {data.verifier?.url ? (
             <a
               href={data.verifier.url}
@@ -193,7 +200,7 @@ export default function ResultPanel({
         </div>
 
         <div className="flex flex-col gap-1">
-          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">Processed</span>
+          <span className="text-muted-foreground/80 text-xs uppercase tracking-wider">{d.result.processed}</span>
           <span className="text-foreground/90 text-sm">{formatDate(data.processed_at)}</span>
         </div>
       </div>
@@ -202,7 +209,7 @@ export default function ResultPanel({
       {buildOpts.length > 0 && (
         <div className="mb-4">
           <span className="text-muted-foreground/80 text-xs uppercase tracking-wider block mb-2">
-            Build Flags
+            {d.result.buildFlags}
           </span>
           <div className="flex flex-wrap gap-2">
             {buildOpts.map((flag) => (
@@ -226,7 +233,7 @@ export default function ResultPanel({
               : "bg-destructive/5 border border-destructive/20"
           }`}
         >
-          <span className="text-muted-foreground text-sm font-medium">Hash Match</span>
+          <span className="text-muted-foreground text-sm font-medium">{d.result.hashMatch}</span>
           <span
             className={`font-mono font-bold text-sm tracking-widest ${
               data.wasm_hash_match ? "text-success" : "text-destructive"
@@ -259,7 +266,7 @@ export default function ResultPanel({
           {cfg.showCheckmark && <polyline points="9 12 11 14 15 10" />}
         </svg>
         <span className={`text-xs font-semibold tracking-wide ${cfg.badgeColor}`}>
-          Level {data.verification_level} — {levelLabel}
+          {d.result.level} {data.verification_level} — {levelLabel}
         </span>
       </div>
     </div>

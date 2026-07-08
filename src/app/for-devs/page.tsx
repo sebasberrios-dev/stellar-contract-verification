@@ -7,6 +7,8 @@ import Navbar from "../../components/Navbar";
 import CodeBlock from "../../components/ui/CodeBlock";
 import AuroraBackground from "../../components/AuroraBackground";
 import Reveal from "../../components/Reveal";
+import { useI18n } from "../../i18n/LanguageContext";
+import { renderTokens } from "../../i18n/renderTokens";
 
 const YAML_TEMPLATE = `name: Build & Verify Soroban Contract
 on:
@@ -25,66 +27,12 @@ jobs:
             --meta "source_repo=\${{ github.server_url }}/\${{ github.repository }}" \\
             --meta "source_rev=\${{ github.sha }}"`;
 
-const STEPS = [
-  {
-    n: "01",
-    title: "Commit your code",
-    desc: "Push your contract source to a public GitHub repository.",
-    icon: GitCommit,
-    iconClass: "text-primary",
-  },
-  {
-    n: "02",
-    title: "Build with --meta flags",
-    desc: "Embed source_repo and source_rev directly into the WASM binary.",
-    icon: Terminal,
-    iconClass: "text-secondary",
-  },
-  {
-    n: "03",
-    title: "Deploy to testnet",
-    desc: "Publish your contract to Stellar testnet.",
-    icon: Rocket,
-    iconClass: "text-accent",
-  },
-  {
-    n: "04",
-    title: "Verify with CSV Verify",
-    desc: "Submit the Contract ID and let CSV Verify reproduce the build.",
-    icon: CheckCircle2,
-    iconClass: "text-success",
-  },
-];
-
-const FAQ_ITEMS = [
-  {
-    q: "Is mainnet supported?",
-    a: "Testnet only for now — mainnet is coming soon. All verifications run against testnet automatically.",
-  },
-  {
-    q: "How long does verification take?",
-    a: "Already-verified contracts return instantly from cache. A first-time rebuild takes about 2–6 minutes while CSV Verify clones the repo and compiles with the official Stellar CLI Docker image.",
-  },
-  {
-    q: "Is my source code safe?",
-    a: "CSV Verify only reads public GitHub repos. No source code or private keys are stored.",
-  },
-  {
-    q: "What if I don't have the exact commit hash?",
-    a: "Use a branch name only if you must — but exact SHA guarantees full reproducibility. Branches move.",
-  },
-  {
-    q: "What is contractmetav0?",
-    a: "The custom WASM section where SEP-58 metadata lives. Generated automatically with --meta flags.",
-  },
-  {
-    q: "Can I verify other developers' contracts?",
-    a: "Yes. Any contract with SEP-58 can be verified by anyone — that's the essence of the standard.",
-  },
-  {
-    q: "What does level 0 mean?",
-    a: "No SEP-58 metadata found. Follow the tutorial to implement it.",
-  },
+// Icon/color assignment per step — the copy lives in the i18n dictionary
+const STEP_VISUALS = [
+  { n: "01", icon: GitCommit, iconClass: "text-primary" },
+  { n: "02", icon: Terminal, iconClass: "text-secondary" },
+  { n: "03", icon: Rocket, iconClass: "text-accent" },
+  { n: "04", icon: CheckCircle2, iconClass: "text-success" },
 ];
 
 function NetworkDot({ dotClass, label }: { dotClass: string; label: string }) {
@@ -97,11 +45,12 @@ function NetworkDot({ dotClass, label }: { dotClass: string; label: string }) {
 }
 
 function FaqAccordion() {
+  const { d } = useI18n();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   return (
     <div className="space-y-3">
-      {FAQ_ITEMS.map((item, i) => {
+      {d.forDevs.faq.map((item, i) => {
         const isOpen = openIndex === i;
         return (
           <div
@@ -145,6 +94,9 @@ function FaqAccordion() {
 }
 
 export default function ForDevsPage() {
+  const { d } = useI18n();
+  const t = d.forDevs;
+
   return (
     <div className="min-h-screen bg-background relative">
       <Navbar />
@@ -155,33 +107,33 @@ export default function ForDevsPage() {
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors pt-6"
           suppressHydrationWarning
         >
-          ← Dashboard
+          {t.back}
         </Link>
 
         {/* Hero */}
         <section className="text-center py-16 md:py-24">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-medium rounded-full px-3 py-1 mb-6">
-            ⚡ 5 min setup
+            {t.pill}
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground tracking-tight mb-4">
-            Make Your Contract{" "}
+            {t.heroTitle}{" "}
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Verifiable
+              {t.heroTitleAccent}
             </span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8 leading-relaxed">
-            Embed SEP-58 metadata so anyone can verify your source code matches what&apos;s deployed on Stellar.
+            {t.heroSub}
           </p>
           <div className="flex items-center justify-center gap-6 mb-8">
-            <NetworkDot dotClass="bg-success" label="Testnet" />
-            <NetworkDot dotClass="bg-muted-foreground/40" label="Mainnet — coming soon" />
+            <NetworkDot dotClass="bg-success" label={t.netTestnet} />
+            <NetworkDot dotClass="bg-muted-foreground/40" label={t.netMainnet} />
           </div>
           <Link
             href="/for-devs/tutorial"
             className="inline-flex items-center gap-2 h-11 bg-foreground text-background font-semibold text-sm rounded-full px-6 transition-all hover:bg-foreground/90 hover:shadow-glow-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             suppressHydrationWarning
           >
-            View full tutorial →
+            {t.ctaTutorial}
           </Link>
         </section>
 
@@ -191,12 +143,10 @@ export default function ForDevsPage() {
           <div className="bg-card border border-border rounded-2xl p-6">
             <span className="text-primary text-2xl" aria-hidden="true">◈</span>
             <h2 className="text-foreground font-semibold text-xl mt-3 mb-2">
-              Build metadata embedded in your WASM
+              {t.sep58CardTitle}
             </h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              SEP-58 links your deployed contract to its exact source code on GitHub — source repo,
-              commit hash, and the Docker image used to build it. CSV Verify reads this metadata to
-              cryptographically verify your contract.
+              {t.sep58CardBody}
             </p>
           </div>
         </section>
@@ -205,18 +155,19 @@ export default function ForDevsPage() {
         {/* Quick overview — 4 steps */}
         <Reveal>
         <section className="mb-16">
-          <h2 className="text-foreground font-semibold text-xl mb-6">Quick overview — 4 steps</h2>
+          <h2 className="text-foreground font-semibold text-xl mb-6">{t.overviewTitle}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {STEPS.map((step) => {
-              const Icon = step.icon;
+            {STEP_VISUALS.map((visual, i) => {
+              const Icon = visual.icon;
+              const step = t.steps[i];
               return (
                 <div
-                  key={step.n}
+                  key={visual.n}
                   className="bg-card border border-border rounded-2xl p-5 hover:border-primary/40 transition-colors duration-300"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <span className="font-mono text-xs text-muted-foreground/70 font-bold">{step.n}</span>
-                    <Icon className={`w-4 h-4 ${step.iconClass}`} aria-hidden="true" />
+                    <span className="font-mono text-xs text-muted-foreground/70 font-bold">{visual.n}</span>
+                    <Icon className={`w-4 h-4 ${visual.iconClass}`} aria-hidden="true" />
                   </div>
                   <h3 className="text-foreground/90 font-medium text-sm mb-1">{step.title}</h3>
                   <p className="text-muted-foreground/80 text-xs leading-relaxed">{step.desc}</p>
@@ -229,7 +180,7 @@ export default function ForDevsPage() {
             className="flex items-center justify-center gap-2 w-full h-11 bg-foreground text-background font-semibold text-sm rounded-full px-6 transition-all hover:bg-foreground/90 hover:shadow-glow-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             suppressHydrationWarning
           >
-            Follow the full tutorial →
+            {t.ctaFollowTutorial}
           </Link>
         </section>
         </Reveal>
@@ -238,18 +189,21 @@ export default function ForDevsPage() {
         <Reveal>
         <section className="mb-16">
           <div className="bg-card border border-border rounded-2xl p-6">
-            <h2 className="text-foreground font-semibold text-lg mb-1">Automate SEP-58 in your CI/CD</h2>
+            <h2 className="text-foreground font-semibold text-lg mb-1">{t.ciTitle}</h2>
             <p className="text-muted-foreground/80 text-sm mb-5">
-              Drop this workflow into{" "}
-              <code className="bg-code text-primary font-mono text-xs px-1.5 py-0.5 rounded">
-                .github/workflows/
-              </code>{" "}
-              to embed metadata on every push to main.
+              {renderTokens(t.ciBody, (codeText, key) => (
+                <code
+                  key={key}
+                  className="bg-code text-primary font-mono text-xs px-1.5 py-0.5 rounded"
+                >
+                  {codeText}
+                </code>
+              ))}
             </p>
             <CodeBlock
               code={YAML_TEMPLATE}
               filename=".github/workflows/verify.yml"
-              copyLabel="Copy template"
+              copyLabel={t.ciCopy}
             />
           </div>
         </section>
@@ -258,7 +212,7 @@ export default function ForDevsPage() {
         {/* FAQ */}
         <Reveal>
         <section className="mb-16">
-          <h2 className="text-foreground font-semibold text-xl mb-6">FAQ</h2>
+          <h2 className="text-foreground font-semibold text-xl mb-6">{t.faqTitle}</h2>
           <FaqAccordion />
         </section>
         </Reveal>
@@ -267,9 +221,9 @@ export default function ForDevsPage() {
         <Reveal>
         <section className="mb-16">
           <div className="rounded-2xl border border-border p-8 text-center bg-gradient-to-br from-primary/10 to-secondary/10">
-            <h2 className="text-foreground font-semibold text-xl mb-2">Need help implementing SEP-58?</h2>
+            <h2 className="text-foreground font-semibold text-xl mb-2">{t.helpTitle}</h2>
             <p className="text-muted-foreground text-sm mb-6 max-w-md mx-auto leading-relaxed">
-              We help Soroban developers make their contracts verifiable. Reach out directly.
+              {t.helpBody}
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <a
@@ -282,7 +236,7 @@ export default function ForDevsPage() {
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644Z" />
                 </svg>
-                Follow on X
+                {t.followX}
               </a>
               <a
                 href="https://t.me/+LkioKlyV7BhlN2Yx"
@@ -294,7 +248,7 @@ export default function ForDevsPage() {
                 <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
                   <path d="M9.78 18.65l.28-4.23 7.68-6.9c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71l-4.14-3.05-2 1.92c-.23.23-.42.42-.83.42z" />
                 </svg>
-                Join on Telegram
+                {t.joinTelegram}
               </a>
             </div>
           </div>

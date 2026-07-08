@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Search } from "lucide-react";
 import Input from "./ui/Input";
 import Button from "./ui/Button";
+import { useI18n } from "../i18n/LanguageContext";
 import type { VerifyFlowState } from "../types/index";
 
 interface VerificationFormProps {
@@ -17,13 +18,14 @@ export default function VerificationForm({
   flowState,
   initialValue = "",
 }: VerificationFormProps) {
+  const { d } = useI18n();
   const [contractId, setContractId] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
 
   function validate(value: string): string | null {
-    if (value.length < 10) return "Contract ID is too short";
-    if (!value.startsWith("C")) return "Contract ID must start with C";
+    if (value.length < 10) return d.form.errTooShort;
+    if (!value.startsWith("C")) return d.form.errStartC;
     return null;
   }
 
@@ -34,7 +36,7 @@ export default function VerificationForm({
 
     const validationError = validate(trimmed);
     if (validationError || trimmed === "") {
-      setError(validationError ?? "Contract ID is required");
+      setError(validationError ?? d.form.errRequired);
       return;
     }
 
@@ -53,14 +55,14 @@ export default function VerificationForm({
   const isDisabled = contractId.trim() === "" || isLoading;
 
   function buttonContent() {
-    if (flowState === "loading-cache") return <span>Checking cache...</span>;
+    if (flowState === "loading-cache") return <span>{d.form.checkingCache}</span>;
     if (flowState === "verifying") {
-      return <span>Rebuilding from source... This may take 2–6 minutes</span>;
+      return <span>{d.form.rebuilding}</span>;
     }
     return (
       <>
         <Search className="w-4 h-4" aria-hidden="true" />
-        <span>Verify Contract</span>
+        <span>{d.form.verify}</span>
       </>
     );
   }
@@ -69,7 +71,7 @@ export default function VerificationForm({
     <form onSubmit={handleSubmit} noValidate className="w-full">
       <div className="flex flex-col gap-3">
         <Input
-          label="Contract ID"
+          label={d.form.label}
           type="text"
           value={contractId}
           onChange={handleChange}

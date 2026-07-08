@@ -7,6 +7,8 @@ import Navbar from "../../../components/Navbar";
 import CodeBlock from "../../../components/ui/CodeBlock";
 import AuroraBackground from "../../../components/AuroraBackground";
 import Reveal from "../../../components/Reveal";
+import { useI18n } from "../../../i18n/LanguageContext";
+import { renderTokens } from "../../../i18n/renderTokens";
 
 const STEP1_CODE = `git add .
 git commit -m "ready to deploy"
@@ -35,35 +37,8 @@ const API_CURL_CODE = `curl -X POST https://stellar-contract-verification.vercel
   -H "Content-Type: application/json" \\
   -d '{"contract_id": "YOUR_CONTRACT_ID"}'`;
 
-const PREREQUISITES = [
-  "stellar-cli installed (v26+)",
-  "Contract compiles with stellar contract build",
-  "Source code in a public GitHub repository",
-  "No Docker needed on your machine — CSV Verify rebuilds your contract in its own sandbox",
-];
-
-const TROUBLESHOOTING = [
-  {
-    color: "red" as const,
-    title: "No Metadata Found",
-    desc: "Deployed without --meta flags. Rebuild with metadata from Step 2, redeploy, and use the new Contract ID.",
-  },
-  {
-    color: "red" as const,
-    title: "Hash Mismatch",
-    desc: "source_rev points to wrong commit, missing bldopt flags, or uncommitted local changes were included. Always commit before building for deployment.",
-  },
-  {
-    color: "amber" as const,
-    title: "Incomplete Metadata",
-    desc: "Either source_repo or source_rev is missing. Both are required to attempt a rebuild.",
-  },
-  {
-    color: "amber" as const,
-    title: "Repository is private",
-    desc: "The verifier clones without authentication. Your repository must be public on GitHub.",
-  },
-];
+// Severity per troubleshooting entry — the copy lives in the i18n dictionary
+const TROUBLE_COLORS = ["red", "red", "amber", "amber"] as const;
 
 function StepWrapper({
   number,
@@ -98,16 +73,17 @@ function StepWrapper({
 }
 
 function ContractTypeTabs() {
+  const { d } = useI18n();
   const [tab, setTab] = useState<"simple" | "workspace">("simple");
 
   return (
     <div>
-      <p className="text-muted-foreground text-sm mb-3">Choose your contract type:</p>
+      <p className="text-muted-foreground text-sm mb-3">{d.tutorial.chooseType}</p>
       <div className="flex flex-wrap gap-2 mb-4">
         {(
           [
-            { key: "simple", label: "Simple contract" },
-            { key: "workspace", label: "Workspace / monorepo" },
+            { key: "simple", label: d.tutorial.tabSimple },
+            { key: "workspace", label: d.tutorial.tabWorkspace },
           ] as const
         ).map((option) => (
           <button
@@ -132,11 +108,14 @@ function ContractTypeTabs() {
       <div className="flex gap-2.5 bg-warning/5 border border-warning/20 text-warning text-sm rounded-lg px-4 py-3 mt-4">
         <span aria-hidden="true">⚠</span>
         <p className="leading-relaxed">
-          Every flag you pass to select your contract must also be passed as{" "}
-          <code className="bg-code text-warning font-mono text-xs px-1.5 py-0.5 rounded">
-            --meta bldopt=
-          </code>
-          . The verifier replays those exact flags when rebuilding.
+          {renderTokens(d.tutorial.bldoptWarning, (codeText, key) => (
+            <code
+              key={key}
+              className="bg-code text-warning font-mono text-xs px-1.5 py-0.5 rounded"
+            >
+              {codeText}
+            </code>
+          ))}
         </p>
       </div>
     </div>
@@ -144,6 +123,7 @@ function ContractTypeTabs() {
 }
 
 function VerifyStep() {
+  const { d } = useI18n();
   const [contractId, setContractId] = useState("");
   const router = useRouter();
 
@@ -168,39 +148,47 @@ function VerifyStep() {
         onClick={handleVerify}
         className="w-full h-11 bg-foreground text-background font-semibold text-sm px-6 rounded-full transition-all hover:bg-foreground/90 hover:shadow-glow-cyan focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background mb-6"
       >
-        Verify Contract →
+        {d.tutorial.verifyButton}
       </button>
-      <p className="text-muted-foreground text-sm mb-3">Or call the API directly:</p>
+      <p className="text-muted-foreground text-sm mb-3">{d.tutorial.orApi}</p>
       <CodeBlock code={API_CURL_CODE} variant="blue" />
     </div>
   );
 }
 
 function TroubleshootingSection() {
+  const { d } = useI18n();
+
   return (
     <div className="space-y-3">
-      {TROUBLESHOOTING.map((item) => (
-        <div
-          key={item.title}
-          className={`border-l-4 bg-card rounded-r-lg px-5 py-4 ${
-            item.color === "red" ? "border-destructive" : "border-warning"
-          }`}
-        >
-          <h3
-            className={`font-medium text-sm mb-1 ${
-              item.color === "red" ? "text-destructive" : "text-warning"
+      {d.tutorial.trouble.map((item, i) => {
+        const color = TROUBLE_COLORS[i] ?? "amber";
+        return (
+          <div
+            key={item.title}
+            className={`border-l-4 bg-card rounded-r-lg px-5 py-4 ${
+              color === "red" ? "border-destructive" : "border-warning"
             }`}
           >
-            {item.title}
-          </h3>
-          <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
-        </div>
-      ))}
+            <h3
+              className={`font-medium text-sm mb-1 ${
+                color === "red" ? "text-destructive" : "text-warning"
+              }`}
+            >
+              {item.title}
+            </h3>
+            <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 export default function TutorialPage() {
+  const { d } = useI18n();
+  const t = d.tutorial;
+
   return (
     <div className="min-h-screen bg-background relative">
       <Navbar />
@@ -211,7 +199,7 @@ export default function TutorialPage() {
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2 transition-colors mb-6"
           suppressHydrationWarning
         >
-          ← Dashboard
+          {t.back}
         </Link>
 
         {/* Breadcrumb */}
@@ -221,28 +209,27 @@ export default function TutorialPage() {
             className="text-primary hover:text-primary/80 transition-colors"
             suppressHydrationWarning
           >
-            For Devs
+            {d.nav.forDevs}
           </Link>
           <span className="text-muted-foreground/60" aria-hidden="true">
             →
           </span>
-          <span className="text-muted-foreground">Tutorial</span>
+          <span className="text-muted-foreground">{t.breadcrumbTutorial}</span>
         </nav>
 
         {/* Hero */}
         <section className="text-center mb-14">
           <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-medium rounded-full px-3 py-1 mb-6">
-            ⚡ Step-by-step guide
+            {t.pill}
           </div>
           <h1 className="text-3xl sm:text-5xl font-bold text-foreground tracking-tight mb-4">
-            How to get your contract{" "}
+            {t.heroTitle}{" "}
             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              verified
+              {t.heroTitleAccent}
             </span>
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            Follow these 4 steps to embed SEP-58 metadata and get your Soroban
-            contract showing as ✅ Contract Verified on CSV Verify.
+            {t.heroSub}
           </p>
         </section>
 
@@ -251,10 +238,10 @@ export default function TutorialPage() {
         <section className="mb-14">
           <div className="bg-card border border-border rounded-2xl p-6">
             <h2 className="text-foreground font-semibold text-lg mb-4">
-              Prerequisites
+              {t.prereqTitle}
             </h2>
             <ul className="space-y-2.5">
-              {PREREQUISITES.map((item) => (
+              {t.prereqs.map((item) => (
                 <li
                   key={item}
                   className="flex items-start gap-2.5 text-muted-foreground text-sm leading-relaxed"
@@ -273,36 +260,31 @@ export default function TutorialPage() {
         {/* Stepper */}
         <section className="mb-6">
           <Reveal>
-          <StepWrapper
-            number={1}
-            title="Commit your code and get the exact SHA"
-          >
+          <StepWrapper number={1} title={t.step1Title}>
             <p className="text-muted-foreground text-sm leading-relaxed mb-4">
-              Use a pinned SHA — branches move, SHAs don&apos;t. The verifier
-              rebuilds from this exact commit.
+              {t.step1Body}
             </p>
             <CodeBlock code={STEP1_CODE} />
           </StepWrapper>
           </Reveal>
 
           <Reveal>
-          <StepWrapper number={2} title="Build with SEP-58 metadata embedded">
+          <StepWrapper number={2} title={t.step2Title}>
             <ContractTypeTabs />
           </StepWrapper>
           </Reveal>
 
           <Reveal>
-          <StepWrapper number={3} title="Deploy to Stellar Testnet">
+          <StepWrapper number={3} title={t.step3Title}>
             <CodeBlock code={DEPLOY_CODE} />
             <p className="text-muted-foreground text-sm leading-relaxed mt-4">
-              The command prints your Contract ID — starts with C, 56 characters
-              long. Copy it.
+              {t.step3Body}
             </p>
           </StepWrapper>
           </Reveal>
 
           <Reveal>
-          <StepWrapper number={4} title="Verify with CSV Verify" isLast>
+          <StepWrapper number={4} title={t.step4Title} isLast>
             <VerifyStep />
           </StepWrapper>
           </Reveal>
@@ -312,21 +294,19 @@ export default function TutorialPage() {
         <Reveal>
         <section className="mb-14">
           <h2 className="text-foreground font-semibold text-xl mb-2">
-            Query the API directly
+            {t.apiTitle}
           </h2>
           <p className="text-muted-foreground text-sm mb-6 leading-relaxed">
-            The UI does this automatically, but you can also call the API from
-            CI or scripts. Always check the cache first — if the contract is
-            already verified it returns instantly.
+            {t.apiBody}
           </p>
 
           <div className="space-y-6">
             <div>
               <p className="text-muted-foreground text-sm mb-3">
                 <span className="text-primary font-medium">
-                  Check if already verified
+                  {t.apiCheckLabel}
                 </span>{" "}
-                (instant):
+                {t.apiCheckSuffix}
               </p>
               <CodeBlock
                 code={`curl "https://stellar-contract-verification.vercel.app/api/v1/contracts/YOUR_CONTRACT_ID/verifications?network=testnet"`}
@@ -336,9 +316,9 @@ export default function TutorialPage() {
             <div>
               <p className="text-muted-foreground text-sm mb-3">
                 <span className="text-primary font-medium">
-                  Trigger verification
+                  {t.apiTriggerLabel}
                 </span>{" "}
-                (2–6 min):
+                {t.apiTriggerSuffix}
               </p>
               <CodeBlock
                 code={`curl -X POST https://stellar-contract-verification.vercel.app/api/verify \\
@@ -351,11 +331,14 @@ export default function TutorialPage() {
             <div className="flex gap-2.5 bg-primary/5 border border-primary/20 text-primary text-sm rounded-lg px-4 py-3">
               <span aria-hidden="true">ℹ</span>
               <p className="leading-relaxed">
-                Only testnet is supported today. Pass{" "}
-                <code className="bg-code text-primary font-mono text-xs px-1.5 py-0.5 rounded">
-                  ?network=testnet
-                </code>{" "}
-                — mainnet support is coming soon.
+                {renderTokens(t.apiNote, (codeText, key) => (
+                  <code
+                    key={key}
+                    className="bg-code text-primary font-mono text-xs px-1.5 py-0.5 rounded"
+                  >
+                    {codeText}
+                  </code>
+                ))}
               </p>
             </div>
           </div>
@@ -366,7 +349,7 @@ export default function TutorialPage() {
         <Reveal>
         <section className="mb-14">
           <h2 className="text-foreground font-semibold text-xl mb-6">
-            Troubleshooting
+            {t.troubleTitle}
           </h2>
           <TroubleshootingSection />
         </section>
@@ -379,7 +362,7 @@ export default function TutorialPage() {
             className="inline-flex items-center gap-2 border border-border text-foreground/80 text-sm font-medium rounded-full px-5 py-2.5 hover:bg-card-hover hover:border-foreground/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
             suppressHydrationWarning
           >
-            ← Back to For Devs
+            {t.backToForDevs}
           </Link>
         </div>
       </div>

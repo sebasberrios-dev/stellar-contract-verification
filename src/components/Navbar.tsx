@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X } from "lucide-react";
+import { Globe, Menu, X } from "lucide-react";
 import NetworkBadge from "./NetworkBadge";
 import WalletButton from "./WalletButton";
+import { useI18n } from "../i18n/LanguageContext";
 
 function BrandLogo() {
   return (
@@ -32,7 +33,23 @@ function BrandLogo() {
   );
 }
 
+function LanguageToggle() {
+  const { lang, setLang } = useI18n();
+  return (
+    <button
+      type="button"
+      onClick={() => setLang(lang === "en" ? "es" : "en")}
+      aria-label={lang === "en" ? "Cambiar a español" : "Switch to English"}
+      className="inline-flex items-center gap-1.5 h-9 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-card-hover transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+    >
+      <Globe className="w-3.5 h-3.5" aria-hidden="true" />
+      {lang.toUpperCase()}
+    </button>
+  );
+}
+
 export default function Navbar() {
+  const { d } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -81,12 +98,13 @@ export default function Navbar() {
             className="hidden md:inline text-muted-foreground text-sm font-medium hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 rounded"
             suppressHydrationWarning
           >
-            For Devs
+            {d.nav.forDevs}
           </Link>
         </div>
 
         {/* Desktop controls */}
         <div className="hidden md:flex items-center gap-4">
+          <LanguageToggle />
           <NetworkBadge />
           <WalletButton />
         </div>
@@ -120,9 +138,10 @@ export default function Navbar() {
             className="text-foreground/90 text-sm font-medium py-2 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 rounded"
             suppressHydrationWarning
           >
-            For Devs
+            {d.nav.forDevs}
           </Link>
           <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
+            <LanguageToggle />
             <NetworkBadge className="flex" />
             <WalletButton />
           </div>

@@ -8,8 +8,10 @@ import AuroraBackground from "../../components/AuroraBackground";
 import VerificationForm from "../../components/VerificationForm";
 import ResultPanel from "../../components/ResultPanel";
 import { useVerifyFlow } from "../../hooks/useVerifyFlow";
+import { useI18n } from "../../i18n/LanguageContext";
 
 function VerifyContent() {
+  const { d } = useI18n();
   const searchParams = useSearchParams();
   const idFromUrl = searchParams.get("id")?.trim() ?? "";
 
@@ -43,15 +45,15 @@ function VerifyContent() {
           className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center gap-2 transition-colors mb-8"
           suppressHydrationWarning
         >
-          ← Dashboard
+          {d.verifyPage.back}
         </Link>
 
         <div className="flex flex-col items-center text-center mb-10">
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight mb-3">
-            Verify a Contract
+            {d.verifyPage.title}
           </h1>
           <p className="text-muted-foreground text-base">
-            Paste a Contract ID — cached results return instantly.
+            {d.verifyPage.sub}
           </p>
         </div>
 
