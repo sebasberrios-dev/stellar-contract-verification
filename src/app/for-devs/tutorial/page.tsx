@@ -39,7 +39,7 @@ const PREREQUISITES = [
   "stellar-cli installed (v26+)",
   "Contract compiles with stellar contract build",
   "Source code in a public GitHub repository",
-  "No Docker needed on your machine — CSV rebuilds your contract in its own sandbox",
+  "No Docker needed on your machine — CSV Verify rebuilds your contract in its own sandbox",
 ];
 
 const TROUBLESHOOTING = [
@@ -242,7 +242,7 @@ export default function TutorialPage() {
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
             Follow these 4 steps to embed SEP-58 metadata and get your Soroban
-            contract showing as ✅ Contract Verified on CSV.
+            contract showing as ✅ Contract Verified on CSV Verify.
           </p>
         </section>
 
@@ -302,7 +302,7 @@ export default function TutorialPage() {
           </Reveal>
 
           <Reveal>
-          <StepWrapper number={4} title="Verify on CSV" isLast>
+          <StepWrapper number={4} title="Verify with CSV Verify" isLast>
             <VerifyStep />
           </StepWrapper>
           </Reveal>

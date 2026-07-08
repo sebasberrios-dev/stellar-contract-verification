@@ -49,8 +49,8 @@ const STEPS = [
   },
   {
     n: "04",
-    title: "Verify on CSV",
-    desc: "Submit the Contract ID and let CSV reproduce the build.",
+    title: "Verify with CSV Verify",
+    desc: "Submit the Contract ID and let CSV Verify reproduce the build.",
     icon: CheckCircle2,
     iconClass: "text-success",
   },
@@ -63,11 +63,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "How long does verification take?",
-    a: "Already-verified contracts return instantly from cache. A first-time rebuild takes about 2–6 minutes while CSV clones the repo and compiles with the official Stellar CLI Docker image.",
+    a: "Already-verified contracts return instantly from cache. A first-time rebuild takes about 2–6 minutes while CSV Verify clones the repo and compiles with the official Stellar CLI Docker image.",
   },
   {
     q: "Is my source code safe?",
-    a: "CSV only reads public GitHub repos. No source code or private keys are stored.",
+    a: "CSV Verify only reads public GitHub repos. No source code or private keys are stored.",
   },
   {
     q: "What if I don't have the exact commit hash?",
@@ -195,7 +195,7 @@ export default function ForDevsPage() {
             </h2>
             <p className="text-muted-foreground text-sm leading-relaxed">
               SEP-58 links your deployed contract to its exact source code on GitHub — source repo,
-              commit hash, and the Docker image used to build it. CSV reads this metadata to
+              commit hash, and the Docker image used to build it. CSV Verify reads this metadata to
               cryptographically verify your contract.
             </p>
           </div>

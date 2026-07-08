@@ -53,7 +53,10 @@ export default function Home() {
           <Reveal>
             <div className="flex flex-col items-center text-center mb-12">
               <HeroVideo className="w-[min(460px,88vw)] -my-8" />
-              <h1 className="text-4xl sm:text-6xl font-bold text-foreground leading-[1.05] mt-4 mb-5">
+              <p className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold tracking-wide rounded-full px-4 py-1.5 mt-2 mb-5">
+                CSV Verify — Contract Source Verify
+              </p>
+              <h1 className="text-4xl sm:text-6xl font-bold text-foreground leading-[1.05] mb-5">
                 Verify smart contracts.
                 <br />
                 <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
@@ -61,7 +64,7 @@ export default function Home() {
                 </span>
               </h1>
               <p className="text-muted-foreground text-lg sm:text-xl max-w-xl leading-relaxed">
-                CSV rebuilds Soroban contracts from their public source and
+                CSV Verify rebuilds Soroban contracts from their public source and
                 proves the on-chain WASM matches. Secure. Transparent. Verified.
               </p>
             </div>
@@ -107,7 +110,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="relative z-10 border-t border-border px-6 py-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-muted-foreground/80 text-sm">
-          <span>© 2026 CSV Stellar Verification. Powered by Soroban.</span>
+          <span>© 2026 CSV Verify. Powered by Soroban.</span>
           <nav className="flex items-center gap-5">
             <a
               href="https://github.com/sebasberrios-dev/stellar-contract-verification/issues"

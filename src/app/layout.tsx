@@ -24,9 +24,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CSV — Contract Source Verify",
+  title: "CSV Verify — Contract Source Verify",
   description:
-    "Verify Soroban smart contracts: CSV rebuilds contracts from their public source and proves the on-chain WASM matches.",
+    "Verify Soroban smart contracts: CSV Verify rebuilds contracts from their public source and proves the on-chain WASM matches.",
 };
 
 export default function RootLayout({

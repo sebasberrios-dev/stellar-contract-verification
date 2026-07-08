@@ -12,7 +12,7 @@ function BrandLogo() {
     <Link
       href="/"
       className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 rounded-lg"
-      aria-label="CSV — Contract Source Verify, home"
+      aria-label="CSV Verify — Contract Source Verify, home"
       suppressHydrationWarning
     >
       {/* Neon logo with real alpha — sits clean on any background */}
