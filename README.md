@@ -69,7 +69,7 @@ The project is split across two components:
 
 | Component | Stack | Where |
 |-----------|-------|-------|
-| **Frontend** (this repository) | Next.js 16 App Router · React 19 · TypeScript strict · Tailwind CSS v4 | Deployed on Vercel |
+| **Frontend** (this branch) | Next.js 16 App Router · React 19 · TypeScript strict · Tailwind CSS v4 | Deployed on Vercel |
 | **Backend verifier** | Rust · Axum · Docker builder · SQLite store · Stellar RPC client | [`demo-backend`](https://github.com/sebasberrios-dev/stellar-contract-verification/tree/demo-backend) branch, deployed on DigitalOcean |
 
 The frontend never talks to the backend from the browser. All requests go through **Next.js API proxy routes**, keeping the backend URL server-side only:

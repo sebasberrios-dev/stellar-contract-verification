@@ -10,6 +10,12 @@ interface Star {
   speed: number;
 }
 
+/**
+ * Constellation canvas. Transparent — the page's ember background shows
+ * through. Cheap per-frame work: plain arc fills only (no gradient or shadow
+ * allocations inside the loop). Under prefers-reduced-motion it draws a
+ * single static frame and never starts the animation loop.
+ */
 export default function StarryBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>(0);
@@ -23,15 +29,17 @@ export default function StarryBackground() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const STAR_COUNT = 100;
-    const CONNECTION_DIST = 150;
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    const STAR_COUNT = 80;
+    const CONNECTION_DIST = 140;
     const MOUSE_DIST = 200;
 
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      initStars();
-    };
+    // Warm ember tints — match the active palette
+    const GLOW = '255,186,120';
+    const LINE = '255,166,98';
 
     const initStars = () => {
       const stars: Star[] = [];
@@ -39,15 +47,15 @@ export default function StarryBackground() {
         stars.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          size: Math.random() * 2.5 + 0.5,
-          opacity: Math.random() * 0.8 + 0.2,
+          size: Math.random() * 2 + 0.5,
+          opacity: Math.random() * 0.7 + 0.2,
           speed: Math.random() * 0.3 + 0.1,
         });
       }
       starsRef.current = stars;
     };
 
-    const draw = () => {
+    const drawFrame = (animate: boolean) => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const stars = starsRef.current;
       const mouse = mouseRef.current;
@@ -55,60 +63,67 @@ export default function StarryBackground() {
       for (let i = 0; i < stars.length; i++) {
         const star = stars[i];
 
-        star.y -= star.speed;
-        if (star.y < -10) {
-          star.y = canvas.height + 10;
-          star.x = Math.random() * canvas.width;
+        if (animate) {
+          star.y -= star.speed;
+          if (star.y < -10) {
+            star.y = canvas.height + 10;
+            star.x = Math.random() * canvas.width;
+          }
         }
 
-        // Glow
-        const gradient = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, star.size * 3);
-        gradient.addColorStop(0, `rgba(147,197,253,${star.opacity})`);
-        gradient.addColorStop(0.5, `rgba(147,197,253,${star.opacity * 0.3})`);
-        gradient.addColorStop(1, 'rgba(147,197,253,0)');
+        // Soft halo + core — two flat fills, no gradient allocation
         ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size * 3, 0, Math.PI * 2);
-        ctx.fillStyle = gradient;
+        ctx.arc(star.x, star.y, star.size * 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${GLOW},${star.opacity * 0.18})`;
         ctx.fill();
 
-        // Core
         ctx.beginPath();
         ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,255,255,${star.opacity})`;
+        ctx.fillStyle = `rgba(255,244,230,${star.opacity})`;
         ctx.fill();
 
-        // Conexiones entre estrellas
+        // Constellation lines between nearby stars
         for (let j = i + 1; j < stars.length; j++) {
           const dx = star.x - stars[j].x;
           const dy = star.y - stars[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < CONNECTION_DIST) {
-            const alpha = (1 - dist / CONNECTION_DIST) * 0.3;
+            const alpha = (1 - dist / CONNECTION_DIST) * 0.25;
             ctx.beginPath();
             ctx.moveTo(star.x, star.y);
             ctx.lineTo(stars[j].x, stars[j].y);
-            ctx.strokeStyle = `rgba(147,197,253,${alpha})`;
+            ctx.strokeStyle = `rgba(${LINE},${alpha})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
         }
 
-        // Conexión con el mouse
+        // Line to the cursor
         const dx = star.x - mouse.x;
         const dy = star.y - mouse.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < MOUSE_DIST) {
-          const alpha = (1 - dist / MOUSE_DIST) * 0.5;
+          const alpha = (1 - dist / MOUSE_DIST) * 0.4;
           ctx.beginPath();
           ctx.moveTo(star.x, star.y);
           ctx.lineTo(mouse.x, mouse.y);
-          ctx.strokeStyle = `rgba(147,197,253,${alpha})`;
+          ctx.strokeStyle = `rgba(${LINE},${alpha})`;
           ctx.lineWidth = 1;
           ctx.stroke();
         }
       }
+    };
 
-      animationRef.current = requestAnimationFrame(draw);
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      initStars();
+      if (reducedMotion) drawFrame(false);
+    };
+
+    const loop = () => {
+      drawFrame(true);
+      animationRef.current = requestAnimationFrame(loop);
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -117,8 +132,11 @@ export default function StarryBackground() {
 
     resize();
     window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', onMouseMove);
-    draw();
+
+    if (!reducedMotion) {
+      window.addEventListener('mousemove', onMouseMove);
+      loop();
+    }
 
     return () => {
       window.removeEventListener('resize', resize);
@@ -131,7 +149,6 @@ export default function StarryBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 z-0 pointer-events-none"
-      style={{ background: '#000000' }}
       aria-hidden="true"
     />
   );

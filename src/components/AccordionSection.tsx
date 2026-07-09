@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useI18n } from "../i18n/LanguageContext";
+import { renderTokens } from "../i18n/renderTokens";
+import type { Dict } from "../i18n/translations";
 
 interface AccordionItem {
   id: string;
@@ -17,7 +20,7 @@ interface AccordionProps {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="inline-block bg-gray-800 text-[#00BFFF] font-mono text-xs px-1.5 py-0.5 rounded">
+    <code className="inline-block bg-code text-primary font-mono text-xs px-1.5 py-0.5 rounded">
       {children}
     </code>
   );
@@ -62,108 +65,101 @@ function IconChevron() {
   );
 }
 
-const ITEMS: AccordionItem[] = [
-  {
-    id: "sep58",
-    title: "What is SEP-58?",
-    icon: <IconInfo />,
-    content: (
-      <div className="space-y-4">
-        <p className="text-slate-400 text-sm leading-relaxed">
-          SEP-58 is a Stellar Ecosystem Proposal that defines a standard for embedding
-          source-code metadata directly inside a compiled Soroban WASM binary. This
-          allows anyone to independently verify that a deployed contract was built from
-          a specific, auditable source repository.
-        </p>
-        <div>
-          <p className="text-slate-300 text-xs font-semibold uppercase tracking-wider mb-3">
-            Metadata fields
-          </p>
-          <ul className="space-y-2">
-            {[
-              { field: "source_repo", desc: "URL of the public source repository" },
-              { field: "source_rev", desc: "Git commit SHA pinned at build time" },
-              { field: "bldimg",     desc: "Docker image used for reproducible build" },
-              { field: "tarball_sha256", desc: "SHA-256 hash of the source tarball" },
-            ].map(({ field, desc }) => (
-              <li key={field} className="flex items-start gap-3">
-                <Code>{field}</Code>
-                <span className="text-slate-400 text-sm">{desc}</span>
+// SEP-58 field names are technical constants — never translated
+const METADATA_FIELDS = [
+  "source_repo",
+  "source_rev",
+  "bldimg",
+  "tarball_sha256",
+] as const;
+
+function code(text: string, key: number) {
+  return <Code key={key}>{text}</Code>;
+}
+
+function buildItems(d: Dict): AccordionItem[] {
+  const a = d.accordion;
+  return [
+    {
+      id: "sep58",
+      title: a.sep58Title,
+      icon: <IconInfo />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground text-sm leading-relaxed">{a.sep58Body}</p>
+          <div>
+            <p className="text-foreground/80 text-xs font-semibold uppercase tracking-wider mb-3">
+              {a.fieldsLabel}
+            </p>
+            <ul className="space-y-2">
+              {METADATA_FIELDS.map((field) => (
+                <li key={field} className="flex items-start gap-3">
+                  <Code>{field}</Code>
+                  <span className="text-muted-foreground text-sm">{a.fields[field]}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "how",
+      title: a.howTitle,
+      icon: <IconCode />,
+      content: (
+        <ol className="space-y-3">
+          {a.howSteps.map((text, i) => (
+            <li key={text} className="flex items-start gap-4">
+              <span className="font-mono text-xs text-muted-foreground/70 font-bold pt-0.5 w-5 shrink-0">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="text-muted-foreground text-sm leading-relaxed">
+                {renderTokens(text, code)}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ),
+    },
+    {
+      id: "why",
+      title: a.whyTitle,
+      icon: <IconShield />,
+      content: (
+        <div className="space-y-4">
+          <p className="text-muted-foreground text-sm leading-relaxed">{a.whyBody}</p>
+          <ul className="space-y-3">
+            {a.whyPoints.map(({ head, body }) => (
+              <li key={head} className="flex items-start gap-3">
+                <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                <span className="text-muted-foreground text-sm leading-relaxed">
+                  <span className="text-foreground/90 font-medium">{head} — </span>{body}
+                </span>
               </li>
             ))}
           </ul>
         </div>
-      </div>
-    ),
-  },
-  {
-    id: "how",
-    title: "How verification works",
-    icon: <IconCode />,
-    content: (
-      <ol className="space-y-3">
-        {[
-          { n: "01", text: <>Fetch the deployed WASM bytecode for the given contract ID from the Stellar RPC node.</> },
-          { n: "02", text: <>Extract the <Code>contractmeta</Code> custom section embedded in the WASM binary.</> },
-          { n: "03", text: <>Parse the SEP-58 fields (<Code>source_repo</Code>, <Code>source_rev</Code>, <Code>bldimg</Code>).</> },
-          { n: "04", text: <>Clone the repository at the exact commit referenced by <Code>source_rev</Code>.</> },
-          { n: "05", text: <>Reproduce the build inside an isolated Docker container using the <Code>bldimg</Code> image.</> },
-          { n: "06", text: <>Compare the resulting WASM hash with the on-chain bytecode — a match means cryptographic verification.</> },
-        ].map(({ n, text }) => (
-          <li key={n} className="flex items-start gap-4">
-            <span className="font-mono text-xs text-slate-600 font-bold pt-0.5 w-5 shrink-0">{n}</span>
-            <span className="text-slate-400 text-sm leading-relaxed">{text}</span>
-          </li>
-        ))}
-      </ol>
-    ),
-  },
-  {
-    id: "why",
-    title: "Why this matters",
-    icon: <IconShield />,
-    content: (
-      <div className="space-y-4">
-        <p className="text-slate-400 text-sm leading-relaxed">
-          Smart contracts control real assets. Without source verification, users must
-          blindly trust that the bytecode on-chain matches the audited source code —
-          a gap that has led to multi-million dollar exploits in other ecosystems.
-        </p>
-        <ul className="space-y-3">
-          {[
-            { head: "Trust minimisation", body: "Anyone can reproduce the build and check the hash without relying on a third party." },
-            { head: "Audit traceability", body: "Security auditors can confirm that the audited commit is exactly what was deployed." },
-            { head: "Supply chain integrity", body: "Pinning the Docker build image prevents toolchain substitution attacks." },
-            { head: "Ecosystem confidence", body: "Verified contracts signal professionalism and attract more users and integrators." },
-          ].map(({ head, body }) => (
-            <li key={head} className="flex items-start gap-3">
-              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-[#00BFFF] shrink-0" />
-              <span className="text-slate-400 text-sm leading-relaxed">
-                <span className="text-slate-200 font-medium">{head} — </span>{body}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    ),
-  },
-];
+      ),
+    },
+  ];
+}
 
 function AccordionRow({ item, isOpen, onToggle }: AccordionProps) {
   return (
-    <div className="border border-[#1e2130] rounded-xl overflow-hidden">
+    <div className="border border-border rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
-        className="w-full flex items-center justify-between px-5 py-4 bg-[#111318] hover:bg-[#161920] transition-colors text-left"
+        className="w-full flex items-center justify-between px-5 py-4 bg-card hover:bg-card-hover transition-colors text-left"
       >
-        <span className="flex items-center gap-3 text-slate-300 font-medium text-sm">
-          <span className="text-[#3b82f6]">{item.icon}</span>
+        <span className="flex items-center gap-3 text-foreground/80 font-medium text-sm">
+          <span className="text-secondary">{item.icon}</span>
           {item.title}
         </span>
         <span
-          className="text-slate-500 transition-transform duration-300"
+          className="text-muted-foreground/80 transition-transform duration-300"
           style={{ transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}
         >
           <IconChevron />
@@ -178,7 +174,7 @@ function AccordionRow({ item, isOpen, onToggle }: AccordionProps) {
           overflow: "hidden",
         }}
       >
-        <div className="px-5 pb-5 pt-4 bg-[#0a0b0f] border-t border-[#1e2130]">
+        <div className="px-5 pb-5 pt-4 bg-background border-t border-border">
           {item.content}
         </div>
       </div>
@@ -187,7 +183,9 @@ function AccordionRow({ item, isOpen, onToggle }: AccordionProps) {
 }
 
 export default function AccordionSection() {
+  const { d } = useI18n();
   const [openId, setOpenId] = useState<string | null>(null);
+  const items = buildItems(d);
 
   function toggle(id: string) {
     setOpenId((prev) => (prev === id ? null : id));
@@ -195,10 +193,10 @@ export default function AccordionSection() {
 
   return (
     <section className="w-full space-y-3">
-      <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-4">
-        Learn more
+      <h2 className="text-muted-foreground text-xs font-semibold uppercase tracking-widest mb-4">
+        {d.accordion.heading}
       </h2>
-      {ITEMS.map((item) => (
+      {items.map((item) => (
         <AccordionRow
           key={item.id}
           item={item}
