@@ -29,11 +29,11 @@ CSV Verify closes that gap using [SEP-58 (Contract Source Verification)](https:/
 
 ```mermaid
 flowchart LR
-    A["Contract ID"] --> B["Fetch on-chain WASM\nvia Stellar RPC"]
-    B --> C["Extract contractmetav0\ncustom section"]
-    C --> D["Clone source_repo\nat source_rev"]
-    D --> E["Rebuild in isolated\nDocker container"]
-    E --> F{"SHA-256\nhashes match?"}
+    A["Contract ID"] --> B["Fetch on-chain WASM<br/>via Stellar RPC"]
+    B --> C["Extract contractmetav0<br/>custom section"]
+    C --> D["Clone source_repo<br/>at source_rev"]
+    D --> E["Rebuild in isolated<br/>Docker container"]
+    E --> F{"SHA-256<br/>hashes match?"}
     F -->|Yes| G["✅ Verified"]
     F -->|No| H["❌ Mismatch"]
 ```
