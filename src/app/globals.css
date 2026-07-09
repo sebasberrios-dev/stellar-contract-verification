@@ -1,33 +1,82 @@
 @import "tailwindcss";
 
-@theme {
-  /* Colors */
-  --color-cyan-primary: #00BFFF;
-  --color-blue-secondary: #3B82F6;
-  --color-surface-glass: rgba(255, 255, 255, 0.05);
-  --color-border-glass: rgba(255, 255, 255, 0.10);
+/* ============================================================
+   Design tokens — single source of truth (HSL triplets).
+   Dark-first: values live in :root. If a light theme ships,
+   add a `.light { … }` block overriding the same variables.
+   z-index scale: 0 bg / 1 watermark / 10 content / 20 navbar /
+   30 dropdowns / 50 modals.
+   ============================================================ */
+:root {
+  /* Palette: "Ember cálido" — warm near-black with orange/red/gold accents */
+  --background: 20 14% 3%;
+  --foreground: 210 40% 98%;
 
+  --card: 20 10% 6%;
+  --card-hover: 20 9% 9%;
+  --border: 20 10% 13%;
+
+  --primary: 22 92% 58%;           /* ember orange */
+  --primary-foreground: 20 14% 4%;
+  --secondary: 350 80% 58%;        /* warm red */
+  --accent: 42 90% 58%;            /* gold */
+
+  --muted: 223 17% 12%;
+  --muted-foreground: 215 20% 65%; /* slate-400 */
+
+  --destructive: 0 91% 71%;        /* red-400 */
+  --warning: 43 96% 56%;           /* amber-400 */
+  --success: 142 69% 58%;          /* green-400 */
+
+  --ring: 22 92% 58%;
+
+  /* Code blocks — slightly warm-shifted panel */
+  --code: 20 25% 7%;
+
+  /* Brand media (logo, hero video) — cyan source assets rotated to ember */
+  --media-hue: -173deg;
+}
+
+/* Map tokens to Tailwind v4 utilities (bg-background, text-primary,
+   border-border, ring-ring, text-muted-foreground, …) */
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-hover: hsl(var(--card-hover));
+  --color-border: hsl(var(--border));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-accent: hsl(var(--accent));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-warning: hsl(var(--warning));
+  --color-success: hsl(var(--success));
+  --color-ring: hsl(var(--ring));
+  --color-code: hsl(var(--code));
+}
+
+@theme {
   /* Fonts — CSS var injected by next/font at runtime */
   --font-geist: ui-sans-serif, system-ui, sans-serif;
   --font-inter: ui-sans-serif, system-ui, sans-serif;
+  --font-display: ui-sans-serif, system-ui, sans-serif;
   --font-jetbrains: ui-monospace, SFMono-Regular, monospace;
-
-  /* Shadows */
-  --shadow-glow-cyan: 0 0 20px rgba(0, 191, 255, 0.15);
-  --shadow-glow-cyan-strong: 0 0 20px rgba(0, 191, 255, 0.4);
 }
 
-:root {
-  --background: #0a0b0f;
-  --foreground: #ffffff;
-  --color-accent: #3b82f6;
-  --color-verified: #22c55e;
-  --color-pending: #f59e0b;
-  --color-failed: #ef4444;
-  --bg: #0a0b0f;
-  --surface: #111318;
-  --surface-2: #161920;
-  --border: #1e2130;
+@theme inline {
+  /* Shadows follow the active palette (token-based, not fixed hues) */
+  --shadow-glow-cyan: 0 0 20px hsl(var(--primary) / 0.15);
+  --shadow-glow-cyan-strong: 0 0 20px hsl(var(--primary) / 0.4);
+  --shadow-glow-blue: 0 0 24px hsl(var(--secondary) / 0.4);
+}
+
+/* Brand media (logo, hero video) recolors with the palette — cyan source
+   assets are hue-rotated to the active brand hue */
+.brand-media {
+  filter: hue-rotate(var(--media-hue, 0deg));
 }
 
 .contract-id,
@@ -35,10 +84,20 @@ code {
   font-family: var(--font-mono, var(--font-jetbrains, ui-monospace, monospace));
 }
 
+/* Headlines in the display face, tight-tracked at any size (stellar.org look) */
+h1,
+h2,
+h3,
+h4,
+.font-display {
+  font-family: var(--font-display, var(--font-inter, ui-sans-serif, system-ui, sans-serif));
+  letter-spacing: -0.02em;
+}
+
 html,
 body {
-  background: #0a0b0f;
-  color: #ffffff;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
 }
 
 /* Scrollbar dark */
@@ -47,14 +106,19 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #111111;
+  background: hsl(var(--card));
 }
 ::-webkit-scrollbar-thumb {
-  background: #333333;
+  background: hsl(var(--border));
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #00BFFF;
+  background: hsl(var(--primary));
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) hsl(var(--background));
 }
 
 /* Utility classes */
@@ -67,31 +131,25 @@ body {
 }
 
 .glow-cyan {
-  box-shadow: 0 0 20px rgba(0, 191, 255, 0.15);
+  box-shadow: 0 0 20px hsl(var(--primary) / 0.15);
 }
 
 /* Gradient text utility */
 .gradient-text {
-  background: linear-gradient(135deg, #00BFFF 0%, #3B82F6 50%, #8B5CF6 100%);
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 50%, hsl(var(--accent)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Scroll personalizado (complementa el existente) */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: #1e2130 #0a0b0f;
-}
-
 /* Selección de texto */
 ::selection {
-  background: rgba(0, 191, 255, 0.2);
-  color: #ffffff;
+  background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
 }
 ::-moz-selection {
-  background: rgba(0, 191, 255, 0.2);
-  color: #ffffff;
+  background: hsl(var(--primary) / 0.2);
+  color: hsl(var(--foreground));
 }
 
 /* ResultPanel entrance animation — replaces tailwindcss-animate */
@@ -108,4 +166,82 @@ body {
 
 .animate-enter {
   animation: enter-slide-up 0.5s ease-out both;
+}
+
+/* Scroll reveal (Reveal.tsx) — opacity/transform/filter only */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  filter: blur(14px);
+  transition:
+    opacity 0.5s ease-out,
+    transform 0.5s ease-out,
+    filter 0.5s ease-out;
+}
+
+.reveal-visible {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Aurora — one soft diagonal beam (reference-image style) plus a faint
+   counter-beam for depth. Transform-only animation (compositor thread). */
+.aurora-beam {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  will-change: transform;
+}
+
+.aurora-beam-1 {
+  width: 1200px;
+  height: 620px;
+  left: 50%;
+  top: -200px;
+  margin-left: -600px;
+  opacity: 0.42;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, hsl(var(--primary)) 0%, hsl(var(--secondary) / 0.7) 45%, transparent 72%);
+  transform: rotate(-14deg);
+  animation: aurora-beam-drift-1 24s ease-in-out infinite alternate;
+}
+
+.aurora-beam-2 {
+  width: 760px;
+  height: 420px;
+  right: -160px;
+  top: 200px;
+  opacity: 0.2;
+  background: radial-gradient(ellipse 50% 50% at 50% 50%, hsl(var(--accent)) 0%, transparent 70%);
+  transform: rotate(18deg);
+  animation: aurora-beam-drift-2 30s ease-in-out infinite alternate;
+}
+
+@keyframes aurora-beam-drift-1 {
+  from { transform: rotate(-14deg) translate3d(0, 0, 0) scale(1); }
+  to { transform: rotate(-11deg) translate3d(60px, 30px, 0) scale(1.08); }
+}
+
+@keyframes aurora-beam-drift-2 {
+  from { transform: rotate(18deg) translate3d(0, 0, 0); }
+  to { transform: rotate(15deg) translate3d(-70px, -30px, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-enter {
+    animation: none;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    filter: none;
+    transition: none;
+  }
+  .aurora-beam {
+    animation: none;
+    will-change: auto;
+  }
+  .animate-ping {
+    animation: none;
+  }
 }

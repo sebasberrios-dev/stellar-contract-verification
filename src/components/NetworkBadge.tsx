@@ -2,7 +2,11 @@
 
 import { useWallet } from "../hooks/useWallet";
 
-export default function NetworkBadge() {
+export default function NetworkBadge({
+  className = "hidden sm:flex",
+}: {
+  className?: string;
+}) {
   const { isConnected, network } = useWallet();
 
   const appNetwork =
@@ -15,10 +19,10 @@ export default function NetworkBadge() {
 
   if (!isConnected || network === null) {
     return (
-      <div className="hidden sm:flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5">
-        <span className="w-2 h-2 rounded-full bg-[#00BFFF] inline-block" />
-        <span className="text-slate-300 text-xs font-medium">
-          Built on Stellar XLM
+      <div className={`${className} items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5`}>
+        <span className="w-2 h-2 rounded-full bg-primary inline-block" />
+        <span className="text-foreground/80 text-xs font-medium">
+          Built on Stellar
         </span>
       </div>
     );
@@ -28,16 +32,16 @@ export default function NetworkBadge() {
     "MAINNET" | "TESTNET" | "FUTURENET",
     { dotClass: string; label: string }
   > = {
-    MAINNET: { dotClass: "bg-green-400", label: "Stellar Mainnet" },
-    TESTNET: { dotClass: "bg-yellow-400", label: "Stellar Testnet" },
-    FUTURENET: { dotClass: "bg-purple-400", label: "Stellar Futurenet" },
+    MAINNET: { dotClass: "bg-success", label: "Stellar Mainnet" },
+    TESTNET: { dotClass: "bg-warning", label: "Stellar Testnet" },
+    FUTURENET: { dotClass: "bg-accent", label: "Stellar Futurenet" },
   };
 
   const config = networkConfig[network];
 
   return (
     <div
-      className="hidden sm:flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-1.5"
+      className={`${className} items-center gap-2 bg-card border border-border rounded-full px-4 py-1.5`}
       title={
         hasMismatch
           ? `Wallet is on ${network}, app uses ${appNetwork}`
@@ -45,7 +49,7 @@ export default function NetworkBadge() {
       }
     >
       <span className={`w-2 h-2 rounded-full ${config.dotClass} inline-block`} />
-      <span className="text-slate-300 text-xs font-medium">{config.label}</span>
+      <span className="text-foreground/80 text-xs font-medium">{config.label}</span>
       {hasMismatch && (
         <span aria-label="Network mismatch warning">⚠</span>
       )}

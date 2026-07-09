@@ -1,22 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Loader2 } from "lucide-react";
+import { Search } from "lucide-react";
+import Input from "./ui/Input";
+import Button from "./ui/Button";
+import { useI18n } from "../i18n/LanguageContext";
 import type { VerifyFlowState } from "../types/index";
 
 interface VerificationFormProps {
   onVerify: (contractId: string) => Promise<void>;
   flowState: VerifyFlowState;
+  initialValue?: string;
 }
 
-export default function VerificationForm({ onVerify, flowState }: VerificationFormProps) {
-  const [contractId, setContractId] = useState("");
+export default function VerificationForm({
+  onVerify,
+  flowState,
+  initialValue = "",
+}: VerificationFormProps) {
+  const { d } = useI18n();
+  const [contractId, setContractId] = useState(initialValue);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
 
   function validate(value: string): string | null {
-    if (value.length < 10) return "Contract ID is too short";
-    if (!value.startsWith("C")) return "Contract ID must start with C";
+    if (value.length < 10) return d.form.errTooShort;
+    if (!value.startsWith("C")) return d.form.errStartC;
     return null;
   }
 
@@ -27,7 +36,7 @@ export default function VerificationForm({ onVerify, flowState }: VerificationFo
 
     const validationError = validate(trimmed);
     if (validationError || trimmed === "") {
-      setError(validationError ?? "Contract ID is required");
+      setError(validationError ?? d.form.errRequired);
       return;
     }
 
@@ -46,60 +55,43 @@ export default function VerificationForm({ onVerify, flowState }: VerificationFo
   const isDisabled = contractId.trim() === "" || isLoading;
 
   function buttonContent() {
-    if (flowState === "loading-cache") {
-      return (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Checking cache...</span>
-        </>
-      );
-    }
+    if (flowState === "loading-cache") return <span>{d.form.checkingCache}</span>;
     if (flowState === "verifying") {
-      return (
-        <>
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Rebuilding from source... This may take 2–6 minutes</span>
-        </>
-      );
+      return <span>{d.form.rebuilding}</span>;
     }
     return (
       <>
-        <Search className="w-4 h-4" />
-        <span>Verify Contract</span>
+        <Search className="w-4 h-4" aria-hidden="true" />
+        <span>{d.form.verify}</span>
       </>
     );
   }
 
   return (
     <form onSubmit={handleSubmit} noValidate className="w-full">
-      <div className="flex flex-col gap-2">
-        <div className="relative">
-          <input
-            type="text"
-            value={contractId}
-            onChange={handleChange}
-            placeholder="Contract ID (e.g. CA...)"
-            maxLength={64}
-            disabled={isLoading}
-            className="w-full bg-[#111318] border border-[#1e2130] text-white rounded-lg px-4 py-3 text-sm font-mono placeholder-slate-600 focus:outline-none focus:border-[#3b82f6] focus:shadow-[0_0_12px_rgba(59,130,246,0.2)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-            aria-describedby={error && touched ? "contract-error" : undefined}
-            aria-invalid={error && touched ? true : undefined}
-          />
-        </div>
+      <div className="flex flex-col gap-3">
+        <Input
+          label={d.form.label}
+          type="text"
+          value={contractId}
+          onChange={handleChange}
+          placeholder="C… (56 characters)"
+          maxLength={64}
+          disabled={isLoading}
+          error={touched ? error : null}
+          spellCheck={false}
+        />
 
-        {error && touched && (
-          <p id="contract-error" role="alert" className="text-red-400 text-xs px-1">
-            {error}
-          </p>
-        )}
-
-        <button
+        <Button
           type="submit"
+          variant="primary"
+          size="md"
           disabled={isDisabled}
-          className="w-full flex items-center justify-center gap-2 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-semibold py-3 px-6 rounded-lg transition-all hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] disabled:opacity-50 disabled:cursor-not-allowed"
+          loading={isLoading}
+          className="w-full"
         >
           {buttonContent()}
-        </button>
+        </Button>
       </div>
     </form>
   );

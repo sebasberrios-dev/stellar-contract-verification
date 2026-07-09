@@ -1,15 +1,14 @@
-# How to Verify Your Soroban Contract with CSV Stellar
+# How to Verify Your Soroban Contract with CSV Verify
 
-This tutorial walks you through getting your deployed Soroban contract to show as **"Contract Verified"** on [CSV Stellar](https://stellar-contract-verification.vercel.app).
+This tutorial walks you through getting your deployed Soroban contract to show as **"Contract Verified"** on [CSV Verify](https://stellar-contract-verification.vercel.app).
 
 ---
 
 ## Prerequisites
 
-- [stellar-cli](https://github.com/stellar/stellar-cli) installed (v26+)
+- [stellar-cli](https://github.com/stellar/stellar-cli) installed (v27+)
 - Your contract compiles with `stellar contract build`
 - Source code in a **public** GitHub repository
-- Docker installed (used internally by stellar-cli to build)
 
 ---
 
@@ -53,7 +52,7 @@ stellar contract build \
 
 > **Rule:** every flag you pass to `stellar contract build` to select your contract must also be passed as a `--meta bldopt=` entry. The verifier replays those exact flags when rebuilding.
 
-The compiled WASM will be at `target/wasm32-unknown-unknown/release/your_contract.wasm`.
+The compiled WASM will be at `target/wasm32v1-none/release/your_contract.wasm`.
 
 ---
 
@@ -61,7 +60,7 @@ The compiled WASM will be at `target/wasm32-unknown-unknown/release/your_contrac
 
 ```bash
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/your_contract.wasm \
+  --wasm target/wasm32v1-none/release/your_contract.wasm \
   --network testnet \
   --source YOUR_ACCOUNT_NAME
 ```
@@ -74,7 +73,7 @@ Contract ID: YOUR_CONTRACT_ID
 
 ---
 
-## Step 4 — Verify on CSV Stellar
+## Step 4 — Verify on CSV Verify
 
 Open [https://stellar-contract-verification.vercel.app](https://stellar-contract-verification.vercel.app), paste your Contract ID, and click **Verify Contract**.
 

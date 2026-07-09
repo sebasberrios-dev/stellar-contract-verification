@@ -1,112 +1,89 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
 import Navbar from "../components/Navbar";
-import Logo from "../components/Logo";
+import HeroVideo from "../components/HeroVideo";
 import StarryBackground from "../components/StarryBackground";
-import CircuitTraces from "../components/CircuitTraces";
-import ShieldLogo from "../components/ShieldLogo";
+import AuroraBackground from "../components/AuroraBackground";
+import Reveal from "../components/Reveal";
 import VerificationForm from "../components/VerificationForm";
 import BadgesRow from "../components/BadgesRow";
 import ResultPanel from "../components/ResultPanel";
 import AccordionSection from "../components/AccordionSection";
-import { lookupContract, submitVerification } from "./actions/verify";
-import type { VerificationEntry, VerifyFlowState } from "../types/index";
+import { useVerifyFlow } from "../hooks/useVerifyFlow";
+import { useI18n } from "../i18n/LanguageContext";
 
 export default function Home() {
-  const [verificationResult, setVerificationResult] = useState<VerificationEntry | null>(null);
-  const [contractId, setContractId] = useState<string>("");
-  const [flowState, setFlowState] = useState<VerifyFlowState>("idle");
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isCached, setIsCached] = useState(false);
-
-  async function handleVerify(id: string) {
-    setVerificationResult(null);
-    setFetchError(null);
-    setContractId(id);
-
-    // Step 1: GET-first — check cache
-    setFlowState("loading-cache");
-    try {
-      const lookup = await lookupContract(id);
-      const first = lookup.verifications[0];
-      if (
-        first &&
-        (first.status === "verified" ||
-          first.status === "mismatch" ||
-          first.status === "failed")
-      ) {
-        setVerificationResult(first);
-        setIsCached(true);
-        setFlowState("cached-result");
-        return;
-      }
-    } catch {
-      // Cache miss or backend unreachable — fall through to POST
-    }
-
-    // Step 2: POST — trigger a rebuild
-    setFlowState("verifying");
-    try {
-      const result = await submitVerification(id);
-      const entry = result.verifications[0] ?? null;
-      if (!entry) {
-        setFetchError("Verification finished but no result was returned.");
-        setFlowState("error");
-        return;
-      }
-      setVerificationResult(entry);
-      setIsCached(false);
-      setFlowState("cached-result");
-    } catch (e) {
-      setFetchError(e instanceof Error ? e.message : "Unexpected error");
-      setIsCached(false);
-      setFlowState("error");
-    }
-  }
-
-  const showResult = flowState === "cached-result" || flowState === "error";
+  const { d } = useI18n();
+  const {
+    verificationResult,
+    contractId,
+    flowState,
+    fetchError,
+    isCached,
+    showResult,
+    handleVerify,
+  } = useVerifyFlow();
 
   return (
-    <div className="min-h-screen" style={{ background: "#0a0b0f" }}>
+    <div className="min-h-screen bg-background">
       <Navbar />
 
       <main className="relative">
-        {/* Background layers */}
+        {/* Background layers — no circuit traces: cleaner, type-first look */}
         <StarryBackground />
-        <CircuitTraces />
+        <AuroraBackground />
 
         {/* CSV logo watermark — sits above the starry background, below the content */}
         <div
-          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] w-[600px] h-[600px] opacity-[0.06] pointer-events-none"
+          className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[1] w-[min(680px,90vw)] opacity-[0.05] pointer-events-none"
           aria-hidden="true"
         >
-          <Logo variant="full" className="w-full h-full" />
+          <Image
+            src="/images/csv-logo.webp"
+            alt=""
+            width={1189}
+            height={513}
+            className="w-full h-auto brand-media"
+          />
         </div>
 
         {/* Content */}
-        <div className="relative z-10 max-w-2xl mx-auto px-6 py-12">
+        <div className="relative z-10 max-w-2xl mx-auto px-6 pt-28 pb-12">
 
           {/* Hero */}
-          <div className="flex flex-col items-center text-center mb-10">
-            <ShieldLogo className="mb-6" />
-            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-3">
-              Contract Source Verify
-            </h1>
-            <p className="text-slate-400 text-lg tracking-wide">
-              Secure&nbsp;•&nbsp;Transparent&nbsp;•&nbsp;Verified
-            </p>
-          </div>
+          <Reveal>
+            <div className="flex flex-col items-center text-center mb-12">
+              <HeroVideo className="w-[min(460px,88vw)] -my-8" />
+              <p className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary text-xs font-semibold tracking-wide rounded-full px-4 py-1.5 mt-2 mb-5">
+                CSV Verify — Contract Source Verify
+              </p>
+              <h1 className="text-4xl sm:text-6xl font-bold text-foreground leading-[1.05] mb-5">
+                {d.home.heroTitle1}
+                <br />
+                <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  {d.home.heroTitle2}
+                </span>
+              </h1>
+              <p className="text-muted-foreground text-lg sm:text-xl max-w-xl leading-relaxed">
+                {d.home.heroSub}
+              </p>
+            </div>
+          </Reveal>
 
           {/* Verification form */}
-          <div className="mb-6">
-            <VerificationForm onVerify={handleVerify} flowState={flowState} />
-          </div>
+          <Reveal delay={100}>
+            <div className="mb-6">
+              <VerificationForm onVerify={handleVerify} flowState={flowState} />
+            </div>
+          </Reveal>
 
           {/* Badges */}
-          <div className="mb-8">
-            <BadgesRow />
-          </div>
+          <Reveal delay={200}>
+            <div className="mb-8">
+              <BadgesRow />
+            </div>
+          </Reveal>
 
           {/* Result panel — appears after verification */}
           <div className="mb-8">
@@ -120,25 +97,27 @@ export default function Home() {
           </div>
 
           {/* Accordion — learn more */}
-          <AccordionSection />
+          <Reveal>
+            <AccordionSection />
+          </Reveal>
 
           {/* Mini footer inside content col */}
-          <p className="text-center text-slate-600 text-xs mt-12 tracking-widest uppercase">
+          <p className="text-center text-muted-foreground/70 text-xs mt-12 tracking-widest uppercase">
             Built on Stellar
           </p>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 px-6 py-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-sm">
-          <span>© 2026 CSV Stellar Verification. Powered by Soroban.</span>
+      <footer className="relative z-10 border-t border-border px-6 py-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-muted-foreground/80 text-sm">
+          <span>© 2026 CSV Verify. Powered by Soroban.</span>
           <nav className="flex items-center gap-5">
             <a
               href="https://github.com/sebasberrios-dev/stellar-contract-verification/issues"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-300 transition-colors"
+              className="hover:text-foreground/80 transition-colors"
               suppressHydrationWarning
             >
               Issues
@@ -147,7 +126,7 @@ export default function Home() {
               href="https://github.com/sebasberrios-dev/stellar-contract-verification/security"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-300 transition-colors"
+              className="hover:text-foreground/80 transition-colors"
               suppressHydrationWarning
             >
               Security
@@ -156,7 +135,7 @@ export default function Home() {
               href="https://github.com/sebasberrios-dev/stellar-contract-verification"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-300 transition-colors"
+              className="hover:text-foreground/80 transition-colors"
               suppressHydrationWarning
             >
               GitHub
