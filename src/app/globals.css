@@ -32,9 +32,6 @@
 
   /* Code blocks — slightly warm-shifted panel */
   --code: 20 25% 7%;
-
-  /* Brand media (logo, hero video) — cyan source assets rotated to ember */
-  --media-hue: -173deg;
 }
 
 /* Map tokens to Tailwind v4 utilities (bg-background, text-primary,
@@ -73,11 +70,9 @@
   --shadow-glow-blue: 0 0 24px hsl(var(--secondary) / 0.4);
 }
 
-/* Brand media (logo, hero video) recolors with the palette — cyan source
-   assets are hue-rotated to the active brand hue */
-.brand-media {
-  filter: hue-rotate(var(--media-hue, 0deg));
-}
+/* Brand media (logo, hero video, poster) ship with the ember hue baked into
+   the files — no runtime hue-rotate filter (it was a per-frame GPU cost,
+   worst on phones). If the palette ever changes, regenerate the assets. */
 
 .contract-id,
 code {
@@ -225,6 +220,17 @@ body {
 @keyframes aurora-beam-drift-2 {
   from { transform: rotate(18deg) translate3d(0, 0, 0); }
   to { transform: rotate(15deg) translate3d(-70px, -30px, 0); }
+}
+
+/* Phones: keep the beams but freeze them and soften the blur — an animated
+   blur(80px) over ~1200x620px re-rasterizes every frame and overwhelms
+   mobile GPUs. A static beam is cached once by the compositor. */
+@media (max-width: 768px) {
+  .aurora-beam {
+    animation: none;
+    will-change: auto;
+    filter: blur(48px);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

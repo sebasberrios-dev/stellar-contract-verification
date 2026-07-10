@@ -44,7 +44,8 @@ export default function Home() {
             alt=""
             width={1189}
             height={513}
-            className="w-full h-auto brand-media"
+            sizes="(max-width: 768px) 90vw, 680px"
+            className="w-full h-auto"
           />
         </div>
 

@@ -17,13 +17,15 @@ function BrandLogo() {
       suppressHydrationWarning
     >
       {/* Neon logo with real alpha — sits clean on any background */}
+      {/* Rendered at h-9 (~84px wide) — sizes keeps the optimizer variant tiny */}
       <Image
         src="/images/csv-logo.webp"
         alt=""
         width={1189}
         height={513}
+        sizes="84px"
         priority
-        className="h-9 w-auto select-none brand-media"
+        className="h-9 w-auto select-none"
         aria-hidden="true"
       />
       <span className="hidden sm:inline text-foreground text-[13px] font-medium tracking-wide whitespace-nowrap">

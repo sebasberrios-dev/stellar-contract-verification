@@ -1,12 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  isConnected,
-  requestAccess,
-  getAddress,
-  getNetwork,
-} from "@stellar/freighter-api";
 
 interface WalletState {
   isConnected: boolean;
@@ -26,24 +20,35 @@ function normalizeNetwork(raw: string): NetworkType | null {
   return null;
 }
 
+// The Freighter SDK is loaded on demand so it never ships in the initial
+// bundle nor runs during hydration — the landing page renders without it.
+function loadFreighter() {
+  return import("@stellar/freighter-api");
+}
+
 export function useWallet() {
   const [state, setState] = useState<WalletState>({
     isConnected: false,
     publicKey: null,
     network: null,
-    isLoading: true,
+    isLoading: false,
     error: null,
   });
 
   useEffect(() => {
+    let cancelled = false;
+
     async function checkConnection() {
       try {
+        const { isConnected, getAddress, getNetwork } = await loadFreighter();
         const connectedResult = await isConnected();
+        if (cancelled) return;
         if (connectedResult.isConnected) {
           const [addressResult, networkResult] = await Promise.all([
             getAddress(),
             getNetwork(),
           ]);
+          if (cancelled) return;
           setState({
             isConnected: true,
             publicKey: addressResult.address ?? null,
@@ -51,23 +56,31 @@ export function useWallet() {
             isLoading: false,
             error: null,
           });
-        } else {
-          setState((prev) => ({ ...prev, isConnected: false, isLoading: false }));
         }
-      } catch (e) {
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: e instanceof Error ? e.message : "Failed to connect to Freighter",
-        }));
+      } catch {
+        // No Freighter extension (e.g. mobile) — stay in the disconnected
+        // state silently; the error surface belongs to an explicit connect().
       }
     }
-    checkConnection();
+
+    // Defer the silent reconnect check until the browser is idle so it never
+    // competes with first paint / hydration.
+    const hasIdle = "requestIdleCallback" in window;
+    const handle = hasIdle
+      ? window.requestIdleCallback(() => void checkConnection())
+      : window.setTimeout(() => void checkConnection(), 1500);
+
+    return () => {
+      cancelled = true;
+      if (hasIdle) window.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
+    };
   }, []);
 
   const connect = useCallback(async () => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
+      const { requestAccess, getAddress, getNetwork } = await loadFreighter();
       await requestAccess();
       const [addressResult, networkResult] = await Promise.all([
         getAddress(),
