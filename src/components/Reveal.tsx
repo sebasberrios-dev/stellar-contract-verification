@@ -23,11 +23,8 @@ export default function Reveal({ children, delay = 0, className = "" }: RevealPr
     const el = ref.current;
     if (!el) return;
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setVisible(true);
-      return;
-    }
-
+    // Under prefers-reduced-motion the CSS media query in globals.css already
+    // forces .reveal fully visible, so no JS branch is needed here.
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

@@ -32,6 +32,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
+      // The saved preference can only be applied after mount — reading
+      // localStorage during render would make client markup diverge from the
+      // English SSR output and break hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved === "es" || saved === "en") setLangState(saved);
     } catch {
       // Storage unavailable (private mode) — stay on the default
