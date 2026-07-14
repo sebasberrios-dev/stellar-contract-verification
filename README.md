@@ -7,7 +7,7 @@
 **Source verification for Soroban smart contracts on Stellar.**
 CSV Verify rebuilds a contract from its public source code and proves the on-chain WASM matches — so users can trust what they interact with.
 
-[**Live Demo**](https://stellar-contract-verification.vercel.app) · [Verify a Contract](https://stellar-contract-verification.vercel.app/verify) · [Developer Tutorial](https://stellar-contract-verification.vercel.app/for-devs/tutorial)
+[**Live Demo**](https://stellar-contract-verification.vercel.app) · [Verify a Contract](https://stellar-contract-verification.vercel.app/verify) · [Developer Tutorial](https://stellar-contract-verification.vercel.app/for-devs/tutorial) · [API Docs](https://stellar-contract-verification.vercel.app/api-docs)
 
 ![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
@@ -79,6 +79,8 @@ The frontend never talks to the backend from the browser. All requests go throug
 | `/api/verify` | `POST` | Submit a contract ID for verification (`{"contract_id": "C..."}`) |
 | `/api/v1/contracts/{contract_id}/verifications?network=testnet` | `GET` | Look up persisted verifications for a contract |
 | `/api/v1/wasm/{wasm_hash}/verifications` | `GET` | Look up verifications by WASM hash |
+
+A human-readable reference for these routes — params, request/response shape, error codes — lives at [`/api-docs`](https://stellar-contract-verification.vercel.app/api-docs).
 
 ```bash
 # Try it against the live deployment
