@@ -341,6 +341,14 @@ export default function TutorialPage() {
                 ))}
               </p>
             </div>
+
+            <Link
+              href="/api-docs"
+              className="inline-flex items-center gap-1.5 text-sm text-primary hover:text-primary/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 rounded"
+              suppressHydrationWarning
+            >
+              {t.apiFullRefLink}
+            </Link>
           </div>
         </section>
         </Reveal>

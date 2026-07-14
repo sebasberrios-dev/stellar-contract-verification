@@ -10,6 +10,7 @@
 export const en = {
   nav: {
     forDevs: "For Devs",
+    apiDocs: "API",
   },
   home: {
     heroTitle1: "Verify smart contracts.",
@@ -210,6 +211,7 @@ export const en = {
     apiTriggerSuffix: "(2–6 min):",
     apiNote:
       "Only testnet is supported today. Pass {?network=testnet} — mainnet support is coming soon.",
+    apiFullRefLink: "Full API reference →",
     troubleTitle: "Troubleshooting",
     trouble: [
       {
@@ -231,6 +233,43 @@ export const en = {
     ],
     backToForDevs: "← Back to For Devs",
   },
+  apiDocs: {
+    back: "← Dashboard",
+    pill: "⚡ Public REST API",
+    heroTitle: "CSV Verify",
+    heroTitleAccent: "API Reference",
+    heroSub:
+      "Every verification the UI shows is available over plain HTTP — no auth, no SDK. Point curl, a CI job, or a registry crawler at these endpoints.",
+    baseUrlLabel: "Base URL",
+    endpoints: [
+      {
+        title: "Look up by Contract ID",
+        desc: "Returns the cached verification record for a contract, if one exists. Instant — no rebuild is triggered.",
+        paramsLabel: "Query params",
+        params: ["network — testnet (default). Mainnet support is coming soon."],
+      },
+      {
+        title: "Look up by WASM hash",
+        desc: "Same lookup, keyed by the WASM hash instead of the contract ID — useful when the same bytecode is deployed under multiple contract IDs.",
+        paramsLabel: "Query params",
+        params: ["network — testnet (default)."],
+      },
+      {
+        title: "Trigger a verification",
+        desc: "Clones the source at source_rev and rebuilds it inside the sandboxed Docker image, then compares the resulting hash against the on-chain WASM. Takes 2–6 minutes on a first run — check the GET lookup first for already-verified contracts.",
+        paramsLabel: "Body",
+        params: ["contract_id — the Stellar contract ID to verify (required)."],
+      },
+    ],
+    responseTitle: "Response shape",
+    responseBody:
+      "Both GET endpoints return the same schema: contract_id, wasm_hash, network, and a verifications[] array with one entry per verifier — status, verification_level (0–4), source_repo, source_rev, the rebuilt hash, and whether it matched on-chain.",
+    errorsTitle: "Errors",
+    errorsBody:
+      "Errors are always JSON: { error, code }. 400 for a malformed request, 500 if the backend isn't configured, 502 if the upstream verifier failed or is unreachable.",
+    notesBody:
+      "These routes run on Vercel and proxy to the Rust verifier over a private, server-side-only URL — the verifier's own address is never exposed to callers. Only testnet is supported today.",
+  },
 };
 
 export type Dict = typeof en;
@@ -239,6 +278,7 @@ export type Lang = "en" | "es";
 export const es: Dict = {
   nav: {
     forDevs: "Para Devs",
+    apiDocs: "API",
   },
   home: {
     heroTitle1: "Verifica smart contracts.",
@@ -439,6 +479,7 @@ export const es: Dict = {
     apiTriggerSuffix: "(2–6 min):",
     apiNote:
       "Hoy solo se soporta testnet. Pasa {?network=testnet} — el soporte para mainnet llegará pronto.",
+    apiFullRefLink: "Referencia completa de la API →",
     troubleTitle: "Solución de problemas",
     trouble: [
       {
@@ -459,6 +500,43 @@ export const es: Dict = {
       },
     ],
     backToForDevs: "← Volver a Para Devs",
+  },
+  apiDocs: {
+    back: "← Dashboard",
+    pill: "⚡ API REST pública",
+    heroTitle: "Referencia de la",
+    heroTitleAccent: "API de CSV Verify",
+    heroSub:
+      "Todo lo que muestra la interfaz está disponible por HTTP plano — sin auth, sin SDK. Apunta curl, un job de CI o un crawler de registro a estos endpoints.",
+    baseUrlLabel: "URL base",
+    endpoints: [
+      {
+        title: "Consultar por Contract ID",
+        desc: "Devuelve el registro de verificación en caché de un contrato, si existe. Instantáneo — no dispara ninguna reconstrucción.",
+        paramsLabel: "Parámetros de consulta",
+        params: ["network — testnet (por defecto). El soporte para mainnet llegará pronto."],
+      },
+      {
+        title: "Consultar por hash de WASM",
+        desc: "La misma consulta, indexada por el hash del WASM en lugar del Contract ID — útil cuando el mismo bytecode está desplegado bajo varios contract IDs.",
+        paramsLabel: "Parámetros de consulta",
+        params: ["network — testnet (por defecto)."],
+      },
+      {
+        title: "Disparar una verificación",
+        desc: "Clona el código fuente en source_rev y lo reconstruye dentro del sandbox de Docker, luego compara el hash resultante con el WASM on-chain. Tarda 2–6 minutos en la primera corrida — consulta primero el GET para contratos ya verificados.",
+        paramsLabel: "Body",
+        params: ["contract_id — el Contract ID de Stellar a verificar (obligatorio)."],
+      },
+    ],
+    responseTitle: "Forma de la respuesta",
+    responseBody:
+      "Ambos endpoints GET devuelven el mismo esquema: contract_id, wasm_hash, network y un arreglo verifications[] con una entrada por verificador — status, verification_level (0–4), source_repo, source_rev, el hash reconstruido y si coincidió on-chain.",
+    errorsTitle: "Errores",
+    errorsBody:
+      "Los errores siempre son JSON: { error, code }. 400 para una solicitud mal formada, 500 si el backend no está configurado, 502 si el verificador upstream falló o no responde.",
+    notesBody:
+      "Estas rutas corren en Vercel y hacen proxy hacia el verificador en Rust por una URL privada del lado del servidor — la dirección del verificador nunca se expone a quien llama. Hoy solo se soporta testnet.",
   },
 };
 

@@ -100,6 +100,13 @@ export default function Navbar() {
           >
             {d.nav.forDevs}
           </Link>
+          <Link
+            href="/api-docs"
+            className="hidden md:inline text-muted-foreground text-sm font-medium hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 rounded"
+            suppressHydrationWarning
+          >
+            {d.nav.apiDocs}
+          </Link>
         </div>
 
         {/* Desktop controls */}
@@ -139,6 +146,14 @@ export default function Navbar() {
             suppressHydrationWarning
           >
             {d.nav.forDevs}
+          </Link>
+          <Link
+            href="/api-docs"
+            onClick={() => setMenuOpen(false)}
+            className="text-foreground/90 text-sm font-medium py-2 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 rounded"
+            suppressHydrationWarning
+          >
+            {d.nav.apiDocs}
           </Link>
           <div className="flex items-center justify-between gap-4 pt-4 border-t border-border">
             <LanguageToggle />
